@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Fondo azul redondeado -->
+  <rect width="32" height="32" rx="7" fill="#1a2f6b"/>
+  <!-- Caja centrada: scale(0.8) translate para centrar en 32x32 -->
+  <g transform="translate(5.6, 2) scale(0.8)">
+    <!-- Cuerpo de la caja -->
+    <rect x="0" y="12" width="26" height="18" rx="3" fill="white" opacity=".15"/>
+    <rect x="0" y="12" width="26" height="18" rx="3" fill="none" stroke="white" stroke-width="2.8"/>
+    <!-- Tapa de la caja -->
+    <path d="M0 12 L5 5 L21 5 L26 12" fill="none" stroke="white" stroke-width="2.8" stroke-linejoin="round"/>
+    <!-- Pliegues laterales -->
+    <line x1="5"  y1="5"  x2="7"  y2="12" stroke="white" stroke-width="1.8" opacity=".7"/>
+    <line x1="21" y1="5"  x2="19" y2="12" stroke="white" stroke-width="1.8" opacity=".7"/>
+    <!-- Línea central vertical -->
+    <line x1="13" y1="12" x2="13" y2="30" stroke="white" stroke-width="1.5" opacity=".5"/>
+  </g>
+</svg>
