@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Stockia — Dashboard</title>
+  <!-- v4.0 -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/global.css?v=5.2">
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- NAV -->
+    <header class="nav-header">
+      <a href="dashboard.html" class="nav-logo" data-logo="nav"></a>
+      <!-- Badge empresa (desktop) -->
+      <div class="nav-empresa-badge" id="navEmpresaBadge" style="display:none">
+        <span class="nav-empresa-dot"></span>
+        <span class="nav-empresa-nombre"></span>
+      </div>
+      <ul class="nav-links" id="navLinks"></ul>
+      <div class="nav-usuario">
+        <div class="nav-usuario-info">
+          <div class="nav-usuario-nombre" id="navNombre">-</div>
+          <div class="nav-usuario-rol" id="navRol">-</div>
+        </div>
+        <button class="btn-salir" onclick="cerrarSesion()">🚪 Salir</button>
+      </div>
+      <button class="nav-hamburguesa" id="navHamburguesa" onclick="toggleMenu()" aria-label="Menú">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </button>
+    </header>
+
+    <nav class="nav-menu-movil" id="navMenuMovil">
+      <div class="usuario-info" id="menuUsuarioInfo">Cargando...</div>
+      <div class="empresa-info" id="menuEmpresaInfo" style="display:none"></div>
+      <div class="separador"></div>
+      <div id="navMovilLinks"></div>
+      <div class="separador"></div>
+      <button onclick="cerrarSesion()"><span class="icono">🚪</span> Salir</button>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="cerrarMenu()"></div>
+
+    <!-- CONTENIDO -->
+    <main class="main-content">
+
+      <!-- Banner empresa -->
+      <div class="empresa-banner" id="empresaBanner" style="display:none">
+        <div class="empresa-banner-icono" id="empresaBannerIcono">🏢</div>
+        <div>
+          <div class="empresa-banner-nombre" id="empresaBannerNombre">-</div>
+          <div class="empresa-banner-desc" id="empresaBannerDesc">Panel principal</div>
+        </div>
+        <div style="margin-left:auto">
+          <a href="admin-global.html" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" id="btnVolverAdmin">← Volver al admin</a>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-titulo">🏠 Panel Principal</h1>
+          <p class="page-subtitulo" id="fechaHoy"></p>
+        </div>
+        <a href="ventas.html" class="btn btn-acento btn-lg" id="btnNuevaVenta">➕ Nueva Venta</a>
+      </div>
+
+      <!-- Contenido dinámico según modo_ventas -->
+      <div id="dashContenido"><div class="cargando" style="padding:40px 0"><div class="spinner"></div></div></div>
+
+    </main>
+
+    <footer class="app-footer">© <span class="anio-actual"></span> Stockia. Todos los derechos reservados.</footer>
+  </div>
+
+  <!-- ═══ BANNER: Mensaje del sistema ═══ -->
+<div id="bannerMensajeSistema" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  z-index:2000;
+  background:rgba(0,0,0,0.55);
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+">
+  <div style="
+    background:#fff;
+    border-radius:var(--r-lg);
+    max-width:520px;
+    width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    overflow:hidden;
+  ">
+    <!-- Header morado -->
+    <div style="background:#7c3aed;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">📢</span>
+        <div>
+          <div style="color:#fff;font-weight:700;font-size:15px" id="bannerMsgAsunto">-</div>
+          <div style="color:#ddd6fe;font-size:11px" id="bannerMsgFecha">-</div>
+        </div>
+      </div>
+      <button onclick="cerrarMensajeSistema()" style="
+        background:rgba(255,255,255,0.2);border:none;color:#fff;
+        width:30px;height:30px;border-radius:50%;cursor:pointer;
+        font-size:16px;display:flex;align-items:center;justify-content:center;
+      ">✕</button>
+    </div>
+    <!-- Cuerpo -->
+    <div style="padding:20px">
+      <div id="bannerMsgContador" style="display:none;font-size:11px;color:var(--texto-suave);margin-bottom:8px;font-weight:600"></div>
+      <div id="bannerMsgTexto" style="font-size:14px;color:var(--texto);line-height:1.6;white-space:pre-wrap"></div>
+    </div>
+    <div style="padding:0 20px 20px;display:flex;justify-content:flex-end">
+      <button onclick="cerrarMensajeSistema()" style="
+        background:#7c3aed;color:#fff;border:none;
+        padding:10px 24px;border-radius:var(--r-md);
+        font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);
+      ">Entendido ✓</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/logo.js?v=5.2" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/global.js?v=5.2"></script>
+  <script>
+    let empresaId = null;
+    let empresa   = null;
+
+    // ── Menú hamburguesa ──────────────────────────────────────
+    document.querySelectorAll('#navMenuMovil a').forEach(a => a.addEventListener('click', cerrarMenu));
+
+    // ── Fecha ──────────────────────────────────────────────────
+    document.getElementById('fechaHoy').textContent =
+      new Date().toLocaleDateString('es-AR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    // ── Init ───────────────────────────────────────────────────
+    (async () => {
+      const sesion = await verificarSesion();
+      if (!sesion) return;
+
+      // Si es admin global sin empresa seleccionada → redirigir al panel admin
+      if (sesion.esAdminGlobal && !sesion.empresa) {
+        window.location.href = 'admin-global.html';
+        return;
+      }
+
+      empresa   = sesion.empresa;
+      empresaId = empresa?.id;
+
+      // Banner empresa (visible para admins globales "actuando como empresa")
+      if (sesion.esAdminGlobal && empresa) {
+        const banner = document.getElementById('empresaBanner');
+        banner.style.display = 'flex';
+        document.getElementById('empresaBannerNombre').textContent = empresa.nombre;
+        document.getElementById('empresaBannerIcono').textContent  = empresa.modulo_articulos_icono || '🏢';
+        document.getElementById('empresaBannerDesc').textContent   = 'Estás navegando como esta empresa';
+        document.getElementById('menuEmpresaInfo').style.display = 'flex';
+        document.getElementById('menuEmpresaInfo').textContent   = empresa.nombre;
+      } else if (empresa) {
+        document.getElementById('menuEmpresaInfo').style.display = 'flex';
+        document.getElementById('menuEmpresaInfo').textContent   = empresa.nombre;
+      }
+
+      // Construir nav
+      construirNav();
+
+      // ── Mensaje del sistema ───────────────────────────────────
+      if (empresaId) verificarMensajeSistema(sesion.perfil?.id);
+
+      // ── Renderizar dashboard según modo_ventas ────────────────
+      const modo = empresa?.config_funciones?.modo_ventas || 'individual';
+      if (modo === 'carrito')       await renderDashCarrito();
+      else if (modo === 'ambos')    await renderDashAmbos();
+      else                          await renderDashIndividual();
+    })();
+
+    // ════════════════════════════════════════════════════════════
+    // HELPERS COMUNES
+    // ════════════════════════════════════════════════════════════
+    function hoyISO() { return new Date().toISOString().split('T')[0]; }
+
+    async function getDatosBase() {
+      const hoy = hoyISO();
+      const inicioMes = hoy.substring(0,7) + '-01';
+      const [arts, ventasMes, ventasHoy, deuda, arqueoHoy] = await Promise.all([
+        sb.from('articulos').select('id,nombre,stock,stock_minimo').eq('empresa_id',empresaId).eq('activo',true),
+        sb.from('ventas').select('total,saldo,forma_pago,fecha_venta').eq('empresa_id',empresaId).gte('fecha_venta',inicioMes),
+        sb.from('ventas').select('total,forma_pago,fecha_venta').eq('empresa_id',empresaId).eq('fecha_venta',hoy),
+        sb.from('ventas').select('saldo').eq('empresa_id',empresaId).gt('saldo',0),
+        sb.from('arqueos').select('*').eq('empresa_id',empresaId).eq('fecha',hoy).order('created_at',{ascending:false}).limit(1),
+      ]);
+      return {
+        articulos:  arts.data||[],
+        ventasMes:  ventasMes.data||[],
+        ventasHoy:  ventasHoy.data||[],
+        deudaTotal: (deuda.data||[]).reduce((s,v)=>s+Number(v.saldo||0),0),
+        arqueoHoy:  arqueoHoy.data?.[0]||null,
+        hoy,
+      };
+    }
+
+    function tablaUltimasVentasHTML(ventas, maxRows=8) {
+      if (!ventas?.length) return `<tr><td colspan="6"><div class="estado-vacio"><div class="estado-vacio-icono">💰</div><div class="estado-vacio-titulo">Sin ventas aún</div></div></td></tr>`;
+      return ventas.slice(0,maxRows).map(v => `
+        <tr>
+          <td><span style="font-family:monospace;font-size:11px;background:var(--bg);border:1px solid var(--borde);padding:2px 6px;border-radius:5px;color:var(--texto-suave)">${v.codigo_venta||'—'}</span></td>
+          <td style="white-space:nowrap">${formatoFecha((v.fecha_venta||v.created_at)+'T12:00:00')}</td>
+          <td class="fw-600">${v.articulo_nombre||'-'}</td>
+          <td>${formatoPeso(v.total)}</td>
+          <td class="${Number(v.saldo)>0?'texto-rojo':'texto-suave'}">${formatoPeso(v.saldo)}</td>
+          <td><span class="badge ${v.estado==='pagado'?'badge-verde':v.estado==='parcial'?'badge-naranja':'badge-rojo'}">${v.estado}</span></td>
+        </tr>`).join('');
+    }
+
+    function stockBajoHTML(articulos) {
+      const bajos = articulos.filter(a => (a.stock_minimo||0) > 0 && a.stock <= a.stock_minimo);
+      if (!bajos.length) return `<p class="texto-suave" style="font-size:13px;padding:8px 0">✓ Todo el stock está bien.</p>`;
+      return bajos.map(a => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--borde);font-size:13px">
+          <span class="fw-600">${a.nombre}</span>
+          <span class="badge badge-rojo">Stock: ${a.stock} / Mín: ${a.stock_minimo}</span>
+        </div>`).join('');
+    }
+
+    function arqueoEstadoHTML(arqueo, ventasHoy) {
+      if (!arqueo) {
+        return `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r-md)">
+          <span style="font-size:22px">⏳</span>
+          <div><div style="font-weight:700;font-size:13px;color:#92400e">Sin cerrar hoy</div>
+          <div style="font-size:11px;color:#92400e">El arqueo de caja del día no fue registrado todavía.</div></div>
+          <a href="ventas.html#arqueo" class="btn btn-sm" style="margin-left:auto;background:#f59e0b;color:#fff;border:none">Ir al arqueo</a>
+        </div>`;
+      }
+      const dif = Number(arqueo.diferencia||0);
+      const ok  = Math.abs(dif) < 1;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:${ok?'#ecfdf5':'#fef2f2'};border:1px solid ${ok?'#a7f3d0':'#fecaca'};border-radius:var(--r-md)">
+        <span style="font-size:22px">${ok?'✅':'⚠️'}</span>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:${ok?'#065f46':'#991b1b'}">${ok?'Arqueo cerrado — cuadra':'Arqueo cerrado — diferencia'}</div>
+          <div style="font-size:11px;color:var(--texto-suave)">Efectivo sistema: ${formatoPeso(arqueo.total_efectivo_sistema)} · Contado: ${formatoPeso(arqueo.efectivo_contado)} · Fondo: ${formatoPeso(arqueo.fondo_caja||0)}</div>
+        </div>
+        ${!ok?`<span style="margin-left:auto;font-weight:800;font-size:15px;color:#dc2626">${dif>0?'+':''}${formatoPeso(dif)}</span>`:''}
+      </div>`;
+    }
+
+    function pagoDesglose(ventas) {
+      const ef  = ventas.filter(v=>v.forma_pago==='efectivo').reduce((s,v)=>s+Number(v.total||0),0);
+      const tr  = ventas.filter(v=>v.forma_pago==='transferencia').reduce((s,v)=>s+Number(v.total||0),0);
+      const ta  = ventas.filter(v=>v.forma_pago==='tarjeta').reduce((s,v)=>s+Number(v.total||0),0);
+      return {ef,tr,ta};
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // LAYOUT 1 — INDIVIDUAL (mayorista/electrodomésticos)
+    // ════════════════════════════════════════════════════════════
+    async function renderDashIndividual() {
+      const d = await getDatosBase();
+      const nArt = empresa?.modulo_articulos_nombre || 'Artículos';
+      const iArt = empresa?.modulo_articulos_icono  || '📦';
+      const stockTotal = d.articulos.reduce((s,a)=>s+(a.stock||0),0);
+      const totalMes   = d.ventasMes.reduce((s,v)=>s+Number(v.total||0),0);
+      const mod = empresa?.modulos_habilitados||{};
+
+      // Cargar últimas ventas
+      const {data:ultimas} = await sb.from('ventas').select('*,clientes(nombre)')
+        .eq('empresa_id',empresaId).order('fecha_venta',{ascending:false}).order('created_at',{ascending:false}).limit(8);
+
+      document.getElementById('dashContenido').innerHTML = `
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-icono azul">${iArt}</div>
+            <div class="stat-info"><div class="stat-valor">${d.articulos.length}</div><div class="stat-label">${nArt} registrados</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono verde">🔢</div>
+            <div class="stat-info"><div class="stat-valor">${stockTotal.toLocaleString('es-AR')}</div><div class="stat-label">Unidades en stock</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono naranja">💰</div>
+            <div class="stat-info"><div class="stat-valor">${formatoPeso(totalMes)}</div><div class="stat-label">Ventas del mes</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono rojo">💳</div>
+            <div class="stat-info"><div class="stat-valor">${formatoPeso(d.deudaTotal)}</div><div class="stat-label">Deuda total a cobrar</div></div>
+          </div>
+        </div>
+
+        <div class="buscadores-grid" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-titulo"><span class="icono">${iArt}</span> Buscar ${nArt.toLowerCase()}</div>
+            <div class="buscador-contenedor" style="margin-bottom:0">
+              <span class="buscador-icono">🔍</span>
+              <input type="text" class="buscador-input" id="buscarArticulo" placeholder="Nombre del ${(nArt.slice(0,-1)||'artículo').toLowerCase()}...">
+            </div>
+            <div id="resultadosArticulo" style="margin-top:12px"></div>
+          </div>
+          ${mod.clientes?`
+          <div class="card">
+            <div class="card-titulo"><span class="icono">👥</span> Buscar cliente</div>
+            <div class="buscador-contenedor" style="margin-bottom:0">
+              <span class="buscador-icono">🔍</span>
+              <input type="text" class="buscador-input" id="buscarCliente" placeholder="Nombre o DNI...">
+            </div>
+            <div id="resultadosCliente" style="margin-top:12px"></div>
+          </div>`:''}
+        </div>
+
+        ${mod.ventas?`
+        <div class="card">
+          <div class="card-titulo"><span class="icono">📋</span> Últimas ventas</div>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead><tr><th>Cód.</th><th>Fecha</th><th>Artículo</th><th>Total</th><th>Deuda</th><th>Estado</th></tr></thead>
+              <tbody>${tablaUltimasVentasHTML(ultimas)}</tbody>
+            </table>
+          </div>
+          <div style="margin-top:16px;text-align:right"><a href="ventas.html" class="btn btn-ghost btn-sm">Ver todas las ventas →</a></div>
+        </div>`:''}
+      `;
+      iniciarBuscadores();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // LAYOUT 2 — CARRITO (kiosco/almacén/ferretería)
+    // ════════════════════════════════════════════════════════════
+    async function renderDashCarrito() {
+      const d = await getDatosBase();
+      const {ef,tr,ta} = pagoDesglose(d.ventasHoy);
+      const totalHoy    = d.ventasHoy.reduce((s,v)=>s+Number(v.total||0),0);
+      const cantHoy     = d.ventasHoy.length;
+      const cf          = empresa?.config_funciones||{};
+      const tieneArqueo = cf.arqueo_caja;
+
+      const {data:ultimas} = await sb.from('ventas').select('*')
+        .eq('empresa_id',empresaId).eq('fecha_venta',d.hoy)
+        .order('created_at',{ascending:false}).limit(8);
+
+      document.getElementById('dashContenido').innerHTML = `
+        <!-- Stats del día -->
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-icono azul">🛒</div>
+            <div class="stat-info"><div class="stat-valor">${cantHoy}</div><div class="stat-label">Ventas hoy</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono verde">💵</div>
+            <div class="stat-info"><div class="stat-valor">${formatoPeso(totalHoy)}</div><div class="stat-label">Recaudado hoy</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono naranja">📦</div>
+            <div class="stat-info"><div class="stat-valor">${d.articulos.filter(a=>(a.stock_minimo||0)>0&&a.stock<=a.stock_minimo).length}</div><div class="stat-label">Productos bajo stock</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono rojo">🔢</div>
+            <div class="stat-info"><div class="stat-valor">${d.articulos.reduce((s,a)=>s+(a.stock||0),0).toLocaleString('es-AR')}</div><div class="stat-label">Unidades en stock</div></div>
+          </div>
+        </div>
+
+        <!-- Desglose por forma de pago -->
+        <div class="card mb-16" style="margin-bottom:16px">
+          <div class="card-titulo"><span class="icono">💳</span> Desglose del día por forma de pago</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
+            <div style="padding:12px;background:var(--bg);border-radius:var(--r-md);border-left:4px solid var(--verde);text-align:center">
+              <div style="font-size:11px;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💵 Efectivo</div>
+              <div style="font-size:20px;font-weight:800">${formatoPeso(ef)}</div>
+            </div>
+            <div style="padding:12px;background:var(--bg);border-radius:var(--r-md);border-left:4px solid var(--azul-accion);text-align:center">
+              <div style="font-size:11px;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">🏦 Transferencia</div>
+              <div style="font-size:20px;font-weight:800">${formatoPeso(tr)}</div>
+            </div>
+            <div style="padding:12px;background:var(--bg);border-radius:var(--r-md);border-left:4px solid var(--naranja);text-align:center">
+              <div style="font-size:11px;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💳 Tarjeta</div>
+              <div style="font-size:20px;font-weight:800">${formatoPeso(ta)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arqueo del día -->
+        ${tieneArqueo?`
+        <div class="card mb-16" style="margin-bottom:16px">
+          <div class="card-titulo"><span class="icono">🏦</span> Arqueo de caja — hoy</div>
+          <div style="margin-top:10px">${arqueoEstadoHTML(d.arqueoHoy, d.ventasHoy)}</div>
+        </div>`:''}
+
+        <!-- Stock bajo -->
+        <div class="card mb-16" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="card-titulo" style="margin:0"><span class="icono">⚠️</span> Productos con stock bajo</div>
+            <a href="articulos.html" class="btn btn-ghost btn-sm">Ver artículos →</a>
+          </div>
+          ${stockBajoHTML(d.articulos)}
+        </div>
+
+        <!-- Últimas ventas del día -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="card-titulo" style="margin:0"><span class="icono">📋</span> Ventas de hoy</div>
+            <a href="ventas.html" class="btn btn-ghost btn-sm">Ver todas →</a>
+          </div>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead><tr><th>Cód.</th><th>Hora</th><th>Artículo / Ítems</th><th>Total</th><th>Pago</th><th>Estado</th></tr></thead>
+              <tbody>
+                ${!ultimas?.length
+                  ? `<tr><td colspan="6"><div class="estado-vacio"><div class="estado-vacio-icono">🛒</div><div class="estado-vacio-titulo">Sin ventas hoy todavía</div></div></td></tr>`
+                  : ultimas.map(v=>`<tr>
+                      <td><span style="font-family:monospace;font-size:11px;background:var(--bg);border:1px solid var(--borde);padding:2px 6px;border-radius:5px;color:var(--texto-suave)">${v.codigo_venta||'—'}</span></td>
+                      <td style="white-space:nowrap;color:var(--texto-suave);font-size:12px">${new Date(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</td>
+                      <td class="fw-600">${v.es_carrito?`<span class="badge badge-azul">🛒 ${v.articulo_nombre}</span>`:v.articulo_nombre||'-'}</td>
+                      <td><b>${formatoPeso(v.total)}</b></td>
+                      <td style="font-size:12px;color:var(--texto-suave)">${{efectivo:'💵',transferencia:'🏦',tarjeta:'💳'}[v.forma_pago]||v.forma_pago}</td>
+                      <td><span class="badge ${v.estado==='pagado'?'badge-verde':v.estado==='parcial'?'badge-naranja':'badge-rojo'}">${v.estado}</span></td>
+                    </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // LAYOUT 3 — AMBOS (negocios mixtos)
+    // ════════════════════════════════════════════════════════════
+    async function renderDashAmbos() {
+      const d = await getDatosBase();
+      const {ef,tr,ta} = pagoDesglose(d.ventasHoy);
+      const totalHoy  = d.ventasHoy.reduce((s,v)=>s+Number(v.total||0),0);
+      const totalMes  = d.ventasMes.reduce((s,v)=>s+Number(v.total||0),0);
+      const cantHoy   = d.ventasHoy.length;
+      const cf        = empresa?.config_funciones||{};
+      const bajosCount= d.articulos.filter(a=>(a.stock_minimo||0)>0&&a.stock<=a.stock_minimo).length;
+
+      const {data:ultimas} = await sb.from('ventas').select('*,clientes(nombre)')
+        .eq('empresa_id',empresaId).order('fecha_venta',{ascending:false}).order('created_at',{ascending:false}).limit(8);
+
+      document.getElementById('dashContenido').innerHTML = `
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-icono azul">🛒</div>
+            <div class="stat-info"><div class="stat-valor">${cantHoy}</div><div class="stat-label">Ventas hoy</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono verde">💵</div>
+            <div class="stat-info"><div class="stat-valor">${formatoPeso(totalHoy)}</div><div class="stat-label">Recaudado hoy</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono naranja">💰</div>
+            <div class="stat-info"><div class="stat-valor">${formatoPeso(totalMes)}</div><div class="stat-label">Ventas del mes</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icono rojo">💳</div>
+            <div class="stat-info"><div class="stat-valor">${formatoPeso(d.deudaTotal)}</div><div class="stat-label">Deuda total</div></div>
+          </div>
+        </div>
+
+        <!-- Desglose del día -->
+        <div class="card mb-16" style="margin-bottom:16px">
+          <div class="card-titulo"><span class="icono">💳</span> Desglose del día</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
+            <div style="padding:12px;background:var(--bg);border-radius:var(--r-md);border-left:4px solid var(--verde);text-align:center">
+              <div style="font-size:11px;font-weight:700;color:var(--texto-suave);text-transform:uppercase;margin-bottom:4px">💵 Efectivo</div>
+              <div style="font-size:18px;font-weight:800">${formatoPeso(ef)}</div>
+            </div>
+            <div style="padding:12px;background:var(--bg);border-radius:var(--r-md);border-left:4px solid var(--azul-accion);text-align:center">
+              <div style="font-size:11px;font-weight:700;color:var(--texto-suave);text-transform:uppercase;margin-bottom:4px">🏦 Transferencia</div>
+              <div style="font-size:18px;font-weight:800">${formatoPeso(tr)}</div>
+            </div>
+            <div style="padding:12px;background:var(--bg);border-radius:var(--r-md);border-left:4px solid var(--naranja);text-align:center">
+              <div style="font-size:11px;font-weight:700;color:var(--texto-suave);text-transform:uppercase;margin-bottom:4px">💳 Tarjeta</div>
+              <div style="font-size:18px;font-weight:800">${formatoPeso(ta)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock bajo + arqueo -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="card">
+            <div class="card-titulo"><span class="icono">⚠️</span> Stock bajo <span class="badge badge-rojo" style="margin-left:4px">${bajosCount}</span></div>
+            <div style="margin-top:8px">${stockBajoHTML(d.articulos)}</div>
+          </div>
+          ${cf.arqueo_caja?`
+          <div class="card">
+            <div class="card-titulo"><span class="icono">🏦</span> Arqueo de hoy</div>
+            <div style="margin-top:8px">${arqueoEstadoHTML(d.arqueoHoy, d.ventasHoy)}</div>
+          </div>`:`
+          <div class="card">
+            <div class="card-titulo"><span class="icono">🔢</span> Stock total</div>
+            <div style="font-size:28px;font-weight:800;margin-top:8px">${d.articulos.reduce((s,a)=>s+(a.stock||0),0).toLocaleString('es-AR')}</div>
+            <div class="texto-suave" style="font-size:12px">unidades en stock</div>
+          </div>`}
+        </div>
+
+        <!-- Últimas ventas -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="card-titulo" style="margin:0"><span class="icono">📋</span> Últimas ventas</div>
+            <a href="ventas.html" class="btn btn-ghost btn-sm">Ver todas →</a>
+          </div>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead><tr><th>Cód.</th><th>Fecha</th><th>Artículo</th><th>Total</th><th>Deuda</th><th>Estado</th></tr></thead>
+              <tbody>${tablaUltimasVentasHTML(ultimas)}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Buscadores (solo layout individual) ──────────────────
+    function iniciarBuscadores() {
+      let tA, tC;
+      document.getElementById('buscarArticulo')?.addEventListener('input', (e) => {
+        clearTimeout(tA);
+        tA = setTimeout(() => buscarArticulos(e.target.value), 300);
+      });
+      document.getElementById('buscarCliente')?.addEventListener('input', (e) => {
+        clearTimeout(tC);
+        tC = setTimeout(() => buscarClientes(e.target.value), 300);
+      });
+    }
+
+    async function buscarArticulos(q) {
+      const res = document.getElementById('resultadosArticulo');
+      if (!res) return;
+      if (!q || q.length < 2) { res.innerHTML = ''; return; }
+      const { data } = await sb.from('articulos').select('nombre,stock,precio')
+        .eq('empresa_id', empresaId).ilike('nombre', `%${q}%`).limit(5);
+      if (!data?.length) { res.innerHTML = '<p class="texto-suave" style="font-size:13px">Sin resultados</p>'; return; }
+      res.innerHTML = data.map(a => `
+        <div style="padding:8px 0;border-bottom:1px solid var(--borde);display:flex;justify-content:space-between;font-size:13px">
+          <span>${a.nombre}</span>
+          <span class="texto-suave">Stock: ${a.stock} · ${formatoPeso(a.precio)}</span>
+        </div>`).join('');
+    }
+
+    async function buscarClientes(q) {
+      const res = document.getElementById('resultadosCliente');
+      if (!res) return;
+      if (!q || q.length < 2) { res.innerHTML = ''; return; }
+      const { data } = await sb.from('clientes').select('nombre,telefono,dni')
+        .eq('empresa_id', empresaId).or(`nombre.ilike.%${q}%,dni.ilike.%${q}%`).limit(5);
+      if (!data?.length) { res.innerHTML = '<p class="texto-suave" style="font-size:13px">Sin resultados</p>'; return; }
+      res.innerHTML = data.map(c => `
+        <a href="clientes.html" style="padding:8px 0;border-bottom:1px solid var(--borde);font-size:13px;display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit">
+          <div><b>${c.nombre}</b> <span class="texto-suave">${c.telefono||''} ${c.dni?'· DNI: '+c.dni:''}</span></div>
+          <span style="font-size:11px;color:var(--azul-accion);white-space:nowrap;margin-left:8px">Ver →</span>
+        </a>`).join('');
+    }
+
+    // ── Mensaje del sistema ───────────────────────────────────
+    let _colaMensajes  = []; // cola de mensajes a mostrar
+    let _msgActualIdx  = 0;
+
+    async function verificarMensajeSistema(userId) {
+      if (!empresaId || !userId) return;
+      const hoy = new Date().toISOString().split('T')[0];
+
+      // Traer mensaje individual activo de esta empresa
+      const { data: individuales } = await sb.from('mensajes_sistema')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .eq('es_global', false)
+        .eq('activo', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      // Traer mensaje global activo
+      const { data: globales } = await sb.from('mensajes_sistema')
+        .select('*')
+        .eq('es_global', true)
+        .eq('activo', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      _colaMensajes = [];
+
+      // Procesar cada mensaje
+      for (const msg of [...(individuales||[]), ...(globales||[])]) {
+        // Verificar si expiró por fecha
+        if (msg.modo_cierre === 'fecha' && msg.fecha_desactivacion && hoy > msg.fecha_desactivacion) {
+          await sb.from('mensajes_sistema').update({ activo: false }).eq('id', msg.id);
+          continue;
+        }
+        // Si modo usuario (o null): saltar si este user ya lo leyó
+        const modo = msg.modo_cierre || 'usuario';
+        if (modo === 'usuario') {
+          const leidoPor = msg.leido_por || [];
+          if (leidoPor.includes(userId)) continue;
+        }
+        _colaMensajes.push(msg);
+      }
+
+      if (_colaMensajes.length) {
+        _msgActualIdx = 0;
+        mostrarMensajeActual(userId);
+      }
+    }
+
+    async function mostrarMensajeActual(userId) {
+      if (_msgActualIdx >= _colaMensajes.length) return;
+      const msg = _colaMensajes[_msgActualIdx];
+
+      const fecha = msg.fecha
+        ? new Date(msg.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric' })
+        : '';
+
+      const esGlobal = msg.es_global;
+      document.getElementById('bannerMsgAsunto').innerHTML =
+        (esGlobal ? '<span style="background:rgba(255,255,255,0.25);border-radius:4px;padding:1px 6px;font-size:11px;margin-right:6px">🌐 GLOBAL</span>' : '') +
+        msg.asunto;
+      document.getElementById('bannerMsgFecha').textContent  = fecha;
+      document.getElementById('bannerMsgTexto').textContent  = msg.mensaje;
+
+      const contador = document.getElementById('bannerMsgContador');
+      if (_colaMensajes.length > 1) {
+        contador.style.display = 'block';
+        contador.textContent   = `Mensaje ${_msgActualIdx + 1} de ${_colaMensajes.length}`;
+      } else {
+        contador.style.display = 'none';
+      }
+
+      document.getElementById('bannerMensajeSistema').style.display = 'flex';
+      // Guardar userId y msgId para registrar lectura al cerrar
+      document.getElementById('bannerMensajeSistema').dataset.userId = userId;
+      document.getElementById('bannerMensajeSistema').dataset.msgId  = msg.id;
+    }
+
+    async function cerrarMensajeSistema() {
+      const userId = document.getElementById('bannerMensajeSistema').dataset.userId;
+      const msgId  = document.getElementById('bannerMensajeSistema').dataset.msgId;
+
+      // FIX v5.2: usar RPC SECURITY DEFINER en lugar de UPDATE directo.
+      // La función marcar_mensaje_leido() solo toca leido_por y
+      // empresas_que_vieron; no permite modificar otros campos.
+      if (msgId) {
+        await sb.rpc('marcar_mensaje_leido', { p_mensaje_id: msgId });
+      }
+
+      _msgActualIdx++;
+      if (_msgActualIdx < _colaMensajes.length) {
+        mostrarMensajeActual(userId);
+      } else {
+        document.getElementById('bannerMensajeSistema').style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
