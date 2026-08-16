@@ -130,49 +130,119 @@
     <footer class="app-footer">© <span class="anio-actual"></span> Stockia. Super Admin.</footer>
   </div>
 
-  <!-- MODAL: Nueva empresa -->
+  <!-- MODAL: Nueva empresa — mejorado v5.2 -->
   <div class="modal-overlay" id="modalNuevaEmpresa">
-    <div class="modal">
+    <div class="modal" style="max-width:540px">
       <div class="modal-header">
         <div class="modal-titulo">🏢 Nueva Empresa</div>
-        <button class="modal-cerrar" onclick="cerrarModal('modalNuevaEmpresa')">✕</button>
+        <button class="modal-cerrar" onclick="cerrarNuevaEmpresa()">✕</button>
       </div>
-      <div class="form-grupo">
-        <label class="form-label">Nombre de la empresa *</label>
-        <input type="text" class="form-input" id="empNombre" placeholder="Ej: Ropa El Centro">
+
+      <!-- Indicador de pasos -->
+      <div id="empPasoIndicador" style="display:flex;gap:0;margin-bottom:18px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--borde)">
+        <div class="emp-paso-item activo" id="empPasoInd1" style="flex:1;padding:8px 6px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:var(--azul-nav);transition:.15s" onclick="irAPaso(1)">1 · Básico</div>
+        <div class="emp-paso-item" id="empPasoInd2" style="flex:1;padding:8px 6px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--texto-suave);border-left:1px solid var(--borde);transition:.15s" onclick="irAPaso(2)">2 · Módulos</div>
+        <div class="emp-paso-item" id="empPasoInd3" style="flex:1;padding:8px 6px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--texto-suave);border-left:1px solid var(--borde);transition:.15s" onclick="irAPaso(3)">3 · Primer usuario</div>
       </div>
-      <div class="form-grupo">
-        <label class="form-label">Slug (URL amigable) *</label>
-        <input type="text" class="form-input" id="empSlug" placeholder="ropa-el-centro" style="font-family:monospace">
-        <small class="texto-suave" style="font-size:11px">Solo letras minúsculas, números y guiones. Se genera automáticamente.</small>
+
+      <!-- PASO 1: Datos básicos -->
+      <div id="empPaso1">
+        <div class="form-grupo">
+          <label class="form-label">Nombre de la empresa *</label>
+          <input type="text" class="form-input" id="empNombre" placeholder="Ej: Ropa El Centro"
+            oninput="autoSlug()">
+        </div>
+        <div class="form-grupo">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Slug (URL amigable) *</span>
+            <span id="empSlugEstado" style="font-size:11px;font-weight:400"></span>
+          </label>
+          <input type="text" class="form-input" id="empSlug"
+            placeholder="ropa-el-centro" style="font-family:monospace"
+            oninput="validarSlug()">
+          <small class="texto-suave" style="font-size:11px">Se genera automáticamente · solo letras, números y guiones.</small>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Tipo de negocio</label>
+          <select class="form-select" id="empTipoNegocio">
+            <option value="mayorista">🏪 Mayorista — requiere datos de cliente en cada venta</option>
+            <option value="kiosco_almacen">🛒 Kiosco / Almacén — venta rápida sin registrar cliente</option>
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Color de la empresa</label>
+          <div class="color-picker-wrap" id="colorPicker"></div>
+          <input type="hidden" id="empColor" value="#1e3a8a">
+        </div>
+        <div class="form-fila">
+          <div class="form-grupo">
+            <label class="form-label">Nombre del módulo de artículos</label>
+            <input type="text" class="form-input" id="empModuloNombre" placeholder="Artículos, Productos, Prendas...">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Ícono</label>
+            <input type="text" class="form-input" id="empModuloIcono" placeholder="📦 👗 🥩 🔧" style="font-size:20px">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none;padding-top:0;margin-top:0">
+          <button class="btn btn-ghost" onclick="cerrarNuevaEmpresa()">Cancelar</button>
+          <button class="btn btn-acento" onclick="irAPaso(2)">Módulos →</button>
+        </div>
       </div>
-      <div class="form-grupo">
-        <label class="form-label">Color de la empresa</label>
-        <div class="color-picker-wrap" id="colorPicker">
+
+      <!-- PASO 2: Módulos -->
+      <div id="empPaso2" style="display:none">
+        <p class="texto-suave" style="font-size:13px;margin-bottom:14px">
+          Elegí qué módulos estarán disponibles para esta empresa. Podés cambiarlo en cualquier momento.
+        </p>
+        <div id="empModulosLista" style="display:flex;flex-direction:column;gap:8px">
           <!-- generado por JS -->
         </div>
-        <input type="hidden" id="empColor" value="#1e3a8a">
+        <div class="modal-footer" style="margin-top:18px">
+          <button class="btn btn-ghost" onclick="irAPaso(1)">← Atrás</button>
+          <button class="btn btn-acento" onclick="irAPaso(3)">Primer usuario →</button>
+        </div>
       </div>
-      <div class="form-grupo">
-        <label class="form-label">Nombre del módulo de artículos</label>
-        <input type="text" class="form-input" id="empModuloNombre" placeholder="Ej: Productos, Prendas, Artículos">
-        <small class="texto-suave" style="font-size:11px">Qué vende esta empresa (se muestra en el menú)</small>
-      </div>
-      <div class="form-grupo">
-        <label class="form-label">Ícono del módulo</label>
-        <input type="text" class="form-input" id="empModuloIcono" placeholder="Ej: 👗 🏠 🥩 🔧" style="font-size:20px">
-      </div>
-      <div class="form-grupo">
-        <label class="form-label">Tipo de negocio</label>
-        <select class="form-select" id="empTipoNegocio">
-          <option value="mayorista">🏪 Mayorista — requiere datos de cliente</option>
-          <option value="kiosco_almacen">🛒 Kiosco / Almacén — venta sin registrar cliente</option>
-        </select>
-        <small class="texto-suave" style="font-size:11px">Esto define si se requieren datos completos del cliente en cada venta.</small>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="cerrarModal('modalNuevaEmpresa')">Cancelar</button>
-        <button class="btn btn-acento" onclick="crearEmpresa()">✓ Crear empresa</button>
+
+      <!-- PASO 3: Primer usuario (opcional) -->
+      <div id="empPaso3" style="display:none">
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--r-md);padding:12px 14px;margin-bottom:16px;font-size:13px;color:#1e40af">
+          Podés crear el primer usuario ahora o hacerlo después desde la card de la empresa. Es opcional.
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <label class="toggle">
+            <input type="checkbox" id="empCrearUsuario" onchange="toggleCrearUsuario()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span style="font-size:13px;font-weight:600">Crear primer usuario para esta empresa</span>
+        </div>
+        <div id="empFormUsuario" style="display:none">
+          <div class="form-fila">
+            <div class="form-grupo">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-input" id="empU1Nombre" placeholder="Nombre del usuario">
+            </div>
+            <div class="form-grupo">
+              <label class="form-label">Rol</label>
+              <select class="form-select" id="empU1Rol">
+                <option value="admin_empresa">Admin empresa</option>
+                <option value="operador">Operador</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="empU1Email" placeholder="usuario@email.com">
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-input" id="empU1Pass" placeholder="Mínimo 8 caracteres">
+          </div>
+        </div>
+        <div class="modal-footer" style="margin-top:8px">
+          <button class="btn btn-ghost" onclick="irAPaso(2)">← Atrás</button>
+          <button class="btn btn-acento" id="btnCrearEmpresaFinal" onclick="crearEmpresa()">✓ Crear empresa</button>
+        </div>
       </div>
     </div>
   </div>
@@ -614,7 +684,8 @@
   </div>
 
   <script src="js/logo.js?v=5.2" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/global.js?v=5.2"></script>
   <script>
     const COLORES = ['#1e3a8a','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#be185d','#374151'];
@@ -715,26 +786,178 @@
       `).join('');
     }
 
+    // ── Helpers modal nueva empresa ───────────────────────────
+    let _empPasoActual = 1;
+
+    function cerrarNuevaEmpresa() {
+      cerrarModal('modalNuevaEmpresa');
+      // Reset form
+      ['empNombre','empSlug','empModuloNombre','empModuloIcono',
+       'empU1Nombre','empU1Email','empU1Pass'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('empCrearUsuario').checked = false;
+      document.getElementById('empFormUsuario').style.display = 'none';
+      document.getElementById('empSlugEstado').textContent = '';
+      irAPaso(1);
+    }
+
+    function irAPaso(n) {
+      _empPasoActual = n;
+      [1,2,3].forEach(i => {
+        const paso = document.getElementById(`empPaso${i}`);
+        const ind  = document.getElementById(`empPasoInd${i}`);
+        if (paso) paso.style.display = i === n ? 'block' : 'none';
+        if (ind) {
+          ind.style.background  = i === n ? '#fff' : 'var(--bg)';
+          ind.style.color       = i === n ? 'var(--azul-nav)' : 'var(--texto-suave)';
+          ind.style.fontWeight  = i === n ? '700' : '600';
+        }
+      });
+      // Al entrar al paso 2, renderizar módulos
+      if (n === 2) renderModulosCreacion();
+    }
+
+    function renderModulosCreacion() {
+      const defauts = { articulos: true, clientes: true, ventas: true, proveedores: false };
+      document.getElementById('empModulosLista').innerHTML = modulosDisponibles.map(m => `
+        <div class="modulo-toggle-card">
+          <div class="modulo-toggle-info">
+            <span class="modulo-toggle-icono">${m.icono}</span>
+            <div>
+              <div class="modulo-toggle-titulo">${m.label}</div>
+              <div class="modulo-toggle-desc">${m.desc}</div>
+            </div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="newMod_${m.key}" ${defauts[m.key] ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      `).join('');
+    }
+
+    function toggleCrearUsuario() {
+      const on = document.getElementById('empCrearUsuario').checked;
+      document.getElementById('empFormUsuario').style.display = on ? 'block' : 'none';
+    }
+
+    // Auto-generar slug desde el nombre
+    function autoSlug() {
+      const nombre = document.getElementById('empNombre').value;
+      const slug = nombre
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim().replace(/\s+/g, '-').replace(/-+/g, '-');
+      document.getElementById('empSlug').value = slug;
+      validarSlug();
+    }
+
+    // Validar unicidad del slug en tiempo real
+    let _slugTimer = null;
+    function validarSlug() {
+      const slug = document.getElementById('empSlug').value.trim();
+      const estado = document.getElementById('empSlugEstado');
+      if (!slug) { estado.textContent = ''; return; }
+      estado.textContent = '⏳ verificando...';
+      estado.style.color = 'var(--texto-suave)';
+      clearTimeout(_slugTimer);
+      _slugTimer = setTimeout(async () => {
+        const { data } = await sb.from('empresas').select('id').eq('slug', slug).limit(1);
+        if (data?.length) {
+          estado.textContent = '✗ ya existe';
+          estado.style.color = 'var(--rojo)';
+          document.getElementById('empSlug').style.borderColor = 'var(--rojo)';
+        } else {
+          estado.textContent = '✓ disponible';
+          estado.style.color = 'var(--verde)';
+          document.getElementById('empSlug').style.borderColor = 'var(--verde)';
+        }
+      }, 500);
+    }
+
     async function crearEmpresa() {
-      const nombre = document.getElementById('empNombre').value.trim();
-      const slug   = document.getElementById('empSlug').value.trim();
-      const color  = document.getElementById('empColor').value;
+      const nombre  = document.getElementById('empNombre').value.trim();
+      const slug    = document.getElementById('empSlug').value.trim();
+      const color   = document.getElementById('empColor').value;
       const mNombre = document.getElementById('empModuloNombre').value.trim() || 'Artículos';
       const mIcono  = document.getElementById('empModuloIcono').value.trim()  || '📦';
       const tipo    = document.getElementById('empTipoNegocio').value;
+
       if (!nombre || !slug) { mostrarAlerta('Nombre y slug son obligatorios', 'error'); return; }
 
-      const { error } = await sb.from('empresas').insert({
+      // Validar slug único antes de insertar
+      const { data: slugExiste } = await sb.from('empresas').select('id').eq('slug', slug).limit(1);
+      if (slugExiste?.length) {
+        mostrarAlerta('Ya existe una empresa con ese slug. Cambialo y probá de nuevo.', 'error');
+        irAPaso(1);
+        return;
+      }
+
+      // Recopilar módulos seleccionados
+      const modulos = {};
+      modulosDisponibles.forEach(m => {
+        modulos[m.key] = document.getElementById(`newMod_${m.key}`)?.checked ?? false;
+      });
+      // Si no se pasó por el paso 2, usar defaults
+      if (!document.getElementById('newMod_articulos')) {
+        modulos.articulos = true; modulos.clientes = true;
+        modulos.ventas = true; modulos.proveedores = false;
+      }
+
+      const btn = document.getElementById('btnCrearEmpresaFinal');
+      btn.disabled = true;
+      btn.textContent = '⏳ Creando...';
+
+      const { data: empData, error } = await sb.from('empresas').insert({
         nombre, slug, color, tipo_negocio: tipo,
         modulo_articulos_nombre: mNombre,
         modulo_articulos_icono:  mIcono,
-        modulos_habilitados: { articulos: true, clientes: true, ventas: true, proveedores: false }
-      });
-      if (error) { mostrarAlerta('Error: ' + error.message, 'error'); return; }
-      mostrarAlerta('Empresa creada ✓', 'exito');
-      cerrarModal('modalNuevaEmpresa');
-      document.getElementById('empNombre').value = '';
-      document.getElementById('empSlug').value   = '';
+        modulos_habilitados: modulos,
+      }).select().single();
+
+      if (error) {
+        mostrarAlerta('Error al crear empresa: ' + error.message, 'error');
+        btn.disabled = false; btn.textContent = '✓ Crear empresa';
+        return;
+      }
+
+      // Crear primer usuario si se completó el formulario
+      const crearU = document.getElementById('empCrearUsuario').checked;
+      if (crearU) {
+        const uNombre = document.getElementById('empU1Nombre').value.trim();
+        const uEmail  = document.getElementById('empU1Email').value.trim();
+        const uPass   = document.getElementById('empU1Pass').value;
+        const uRol    = document.getElementById('empU1Rol').value;
+
+        if (!uNombre || !uEmail || !uPass) {
+          mostrarAlerta('Empresa creada, pero faltan datos del usuario.', 'warning');
+        } else if (uPass.length < 8) {
+          mostrarAlerta('Empresa creada, pero la contraseña debe tener mínimo 8 caracteres.', 'warning');
+        } else {
+          const { data: { session: adminSession } } = await sb.auth.getSession();
+          const { data: uData, error: uErr } = await sb.auth.signUp({ email: uEmail, password: uPass });
+          if (adminSession) {
+            await sb.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
+          }
+          if (!uErr && uData?.user) {
+            await sb.rpc('crear_perfil_usuario', {
+              p_id: uData.user.id, p_empresa_id: empData.id,
+              p_nombre: uNombre, p_email: uEmail, p_rol: uRol,
+            });
+            mostrarAlerta(`Empresa y usuario "${uNombre}" creados ✓`, 'exito');
+          } else {
+            mostrarAlerta('Empresa creada ✓ — error al crear usuario: ' + (uErr?.message || ''), 'warning');
+          }
+        }
+      } else {
+        mostrarAlerta(`Empresa "${nombre}" creada ✓`, 'exito');
+      }
+
+      btn.disabled = false; btn.textContent = '✓ Crear empresa';
+      cerrarNuevaEmpresa();
       cargarEmpresas();
     }
 
