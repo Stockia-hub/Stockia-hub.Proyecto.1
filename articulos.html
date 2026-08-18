@@ -111,7 +111,15 @@
           <input type="text" class="form-input" id="artNombre" placeholder="Ej: Artículo">
         </div>
         <div class="form-grupo">
-          <label class="form-label">Código</label>
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+            Código
+            <button type="button" onclick="escanearCodigoArticulo()"
+              title="Escanear código de barras"
+              style="display:flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+              Escanear
+            </button>
+          </label>
           <input type="text" class="form-input" id="artCodigo" placeholder="Ej: ART-001">
         </div>
       </div>
@@ -144,6 +152,24 @@
         </div>
       </div>
 
+      <div class="form-grupo">
+        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Código de barras (EAN / QR)</span>
+          <button type="button" onclick="escanearCodigoBarras()"
+            title="Escanear con la cámara"
+            style="display:flex;align-items:center;gap:4px;background:#1a2f6b;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
+            Escanear
+          </button>
+        </label>
+        <input type="text" class="form-input" id="artCodigoBarras"
+          placeholder="Ej: 7790895000039" inputmode="numeric"
+          style="font-family:monospace;letter-spacing:.5px">
+        <small class="texto-suave" style="font-size:11px">
+          Se usa al escanear en ventas para identificar el producto automáticamente.
+        </small>
+      </div>
+
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="cerrarModal('modalArticulo')">Cancelar</button>
         <button class="btn btn-acento" onclick="guardarArticulo()">✓ Guardar</button>
@@ -169,8 +195,10 @@
 
   <script src="js/logo.js?v=5.2" defer></script>
   <script src="js/config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/global.js?v=5.2"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="js/scanner.js?v=5.2"></script>
   <script>
     let empresaId  = null;
     let empresa    = null;
@@ -290,16 +318,52 @@
       renderTabla(lista);
     }
 
+    // ── Escáner para código interno (artCodigo) ───────────────
+    function escanearCodigoArticulo() {
+      window._stockiaScanner.abrir(async (codigo) => {
+        // Buscar si ya existe artículo con ese código o código de barras
+        const existe = todosLosArticulos.find(a =>
+          a.codigo === codigo || a.codigo_barras === codigo
+        );
+        if (existe) {
+          window._stockiaScanner.setResultado(`✅ ${existe.nombre} — editando`, 'ok');
+          setTimeout(() => { editarArticulo(existe.id); }, 800);
+        } else {
+          document.getElementById('artCodigo').value = codigo;
+          const overlay = document.getElementById('modalArticulo');
+          if (overlay.style.display !== 'flex') abrirModalNuevo();
+          document.getElementById('artCodigo').value = codigo;
+          window._stockiaScanner.setResultado(`✅ Código cargado`, 'ok');
+        }
+      }, { titulo: '📷 Escanear código interno' });
+    }
+
+    // ── Escáner para código de barras (EAN/QR) ────────────────
+    function escanearCodigoBarras() {
+      window._stockiaScanner.abrir(async (codigo) => {
+        // Buscar si ya hay artículo con ese código de barras
+        const existe = todosLosArticulos.find(a => a.codigo_barras === codigo);
+        if (existe) {
+          window._stockiaScanner.setResultado(`⚠️ Código ya asignado a "${existe.nombre}"`, 'err');
+          setTimeout(() => { editarArticulo(existe.id); }, 1000);
+        } else {
+          document.getElementById('artCodigoBarras').value = codigo;
+          window._stockiaScanner.setResultado(`✅ Código de barras cargado`, 'ok');
+        }
+      }, { titulo: '📷 Escanear código de barras (EAN/QR)' });
+    }
+
     // ── Modal nuevo ───────────────────────────────────────────
     function abrirModalNuevo() {
-      document.getElementById('artId').value       = '';
-      document.getElementById('artNombre').value   = '';
-      document.getElementById('artCodigo').value   = '';
-      document.getElementById('artDesc').value     = '';
-      document.getElementById('artCategoria').value= '';
-      document.getElementById('artPrecio').value   = '';
-      document.getElementById('artStock').value    = '';
-      document.getElementById('artStockMin').value = '';
+      document.getElementById('artId').value          = '';
+      document.getElementById('artNombre').value      = '';
+      document.getElementById('artCodigo').value      = '';
+      document.getElementById('artCodigoBarras').value= '';
+      document.getElementById('artDesc').value        = '';
+      document.getElementById('artCategoria').value   = '';
+      document.getElementById('artPrecio').value      = '';
+      document.getElementById('artStock').value       = '';
+      document.getElementById('artStockMin').value    = '';
       document.getElementById('modalTitulo').textContent = `➕ Nuevo artículo`;
       abrirModal('modalArticulo');
     }
@@ -307,14 +371,15 @@
     function editarArticulo(id) {
       const a = todosLosArticulos.find(x => x.id === id);
       if (!a) return;
-      document.getElementById('artId').value       = a.id;
-      document.getElementById('artNombre').value   = a.nombre;
-      document.getElementById('artCodigo').value   = a.codigo  || '';
-      document.getElementById('artDesc').value     = a.descripcion || '';
-      document.getElementById('artCategoria').value= a.categoria   || '';
-      document.getElementById('artPrecio').value   = a.precio  || '';
-      document.getElementById('artStock').value    = a.stock   || '';
-      document.getElementById('artStockMin').value = a.stock_minimo || '';
+      document.getElementById('artId').value          = a.id;
+      document.getElementById('artNombre').value      = a.nombre;
+      document.getElementById('artCodigo').value      = a.codigo         || '';
+      document.getElementById('artCodigoBarras').value= a.codigo_barras  || '';
+      document.getElementById('artDesc').value        = a.descripcion    || '';
+      document.getElementById('artCategoria').value   = a.categoria      || '';
+      document.getElementById('artPrecio').value      = a.precio         || '';
+      document.getElementById('artStock').value       = a.stock          || '';
+      document.getElementById('artStockMin').value    = a.stock_minimo   || '';
       document.getElementById('modalTitulo').textContent = `✏️ Editar artículo`;
       abrirModal('modalArticulo');
     }
@@ -325,14 +390,15 @@
       if (!nombre) { mostrarAlerta('El nombre es obligatorio', 'error'); return; }
 
       const datos = {
-        empresa_id: empresaId,
+        empresa_id:    empresaId,
         nombre,
-        codigo:      document.getElementById('artCodigo').value.trim()   || null,
-        descripcion: document.getElementById('artDesc').value.trim()     || null,
-        categoria:   document.getElementById('artCategoria').value.trim()|| null,
-        precio:      parseFloat(document.getElementById('artPrecio').value)   || 0,
-        stock:       parseInt(document.getElementById('artStock').value)       || 0,
-        stock_minimo:parseInt(document.getElementById('artStockMin').value)    || 0,
+        codigo:        document.getElementById('artCodigo').value.trim()       || null,
+        codigo_barras: document.getElementById('artCodigoBarras').value.trim() || null,
+        descripcion:   document.getElementById('artDesc').value.trim()         || null,
+        categoria:     document.getElementById('artCategoria').value.trim()    || null,
+        precio:        parseFloat(document.getElementById('artPrecio').value)  || 0,
+        stock:         parseInt(document.getElementById('artStock').value)      || 0,
+        stock_minimo:  parseInt(document.getElementById('artStockMin').value)   || 0,
       };
 
       const { error } = id
