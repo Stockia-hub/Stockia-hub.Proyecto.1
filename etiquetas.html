@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Stockia — Etiquetas</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a2f6b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/global.css?v=5.2">
+
+  <style>
+    /* ── Pantalla normal ───────────────────────────────────── */
+    .config-wrap {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 700px) {
+      .config-wrap { grid-template-columns: 1fr 1fr; }
+    }
+
+    .preview-label {
+      border: 2px dashed #aaa;
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+      background: #fff;
+      gap: 4px;
+    }
+    .preview-label .et-l1  { font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
+    .preview-label .et-l2  { font-size: 11px; font-weight: 500; text-align: center; color: #444; line-height: 1.2; }
+    .preview-label .et-sub { font-size: 11px; color: #555; font-weight: 500; }
+    .preview-label svg     { max-width: 100%; }
+
+    .tipo-radio { display: flex; gap: 16px; flex-wrap: wrap; }
+    .tipo-radio label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      padding: 8px 14px;
+      border: 2px solid var(--borde);
+      border-radius: var(--r-md);
+      transition: var(--transition);
+    }
+    .tipo-radio input[type=radio] { display: none; }
+    .tipo-radio input:checked + span { color: var(--azul-nav); }
+    .tipo-radio label:has(input:checked) {
+      border-color: var(--azul-nav);
+      background: #eff6ff;
+    }
+
+    .sheet-preview-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--borde);
+      border-radius: var(--r-lg);
+      background: #f8fafc;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    /* ── HOJA A4 en pantalla ───────────────────────────────── */
+    #sheetA4 {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-content: start;
+      box-shadow: 0 4px 20px rgba(0,0,0,.12);
+      box-sizing: border-box;
+      padding: 6mm;
+      gap: 0;
+    }
+
+    /* ── Etiqueta individual ───────────────────────────────── */
+    .et {
+      border: 1.5px dashed #bbb;
+      box-sizing: border-box;
+      padding: 3.5mm 3mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      height: 32mm;
+      overflow: hidden;
+    }
+    .et .et-l1  { font-size: 8.5pt; font-weight: 700; text-align: center; line-height: 1.2; font-family: 'Poppins', sans-serif; }
+    .et .et-l2  { font-size: 7.5pt; font-weight: 500; text-align: center; color: #333; line-height: 1.2; font-family: 'Poppins', sans-serif; }
+    .et svg     { max-width: 100%; height: auto; }
+    .et canvas  { max-width: 100%; height: auto !important; }
+    .et .et-sub { font-size: 7pt; color: #444; font-weight: 500; font-family: 'Poppins', sans-serif; }
+
+    /* ── IMPRESIÓN ─────────────────────────────────────────── */
+    @media print {
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      body * { visibility: hidden !important; }
+      #sheetA4,
+      #sheetA4 * { visibility: visible !important; }
+      #sheetA4 {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+        box-shadow: none !important;
+        padding: 6mm !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <header class="nav-header">
+    <a href="dashboard.html" class="nav-logo" data-logo="nav"></a>
+    <div id="navEmpresaBadge" class="nav-empresa-badge" style="display:none">
+      <span class="nav-empresa-dot"></span>
+      <span class="nav-empresa-nombre"></span>
+    </div>
+    <ul class="nav-links" id="navLinks"></ul>
+    <div class="nav-usuario">
+      <div class="nav-usuario-info">
+        <div class="nav-usuario-nombre" id="navNombre">-</div>
+        <div class="nav-usuario-rol" id="navRol">-</div>
+      </div>
+      <button class="btn-salir" onclick="cerrarSesion()">🚪 Salir</button>
+    </div>
+    <button class="nav-hamburguesa" onclick="toggleMenu()">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
+  </header>
+
+  <nav class="nav-menu-movil" id="navMenuMovil">
+    <div class="usuario-info" id="menuUsuarioInfo"></div>
+    <div class="empresa-info" id="menuEmpresaInfo" style="display:none"></div>
+    <div class="separador"></div>
+    <div id="navMovilLinks"></div>
+    <div class="separador"></div>
+    <button onclick="cerrarSesion()">🚪 Salir</button>
+  </nav>
+  <div class="nav-overlay" id="navOverlay" onclick="cerrarMenu()"></div>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <div class="page-titulo">🏷️ Generador de Etiquetas</div>
+        <div class="page-subtitulo">Creá códigos de barras y QR para imprimir en A4</div>
+      </div>
+      <button class="btn btn-acento" onclick="imprimirHoja()">🖨️ Imprimir hoja</button>
+    </div>
+
+    <!-- CONFIGURACIÓN -->
+    <div class="card mb-16">
+      <div class="card-titulo">⚙️ Configuración de etiqueta</div>
+      <div class="config-wrap">
+
+        <!-- Columna izquierda: formulario -->
+        <div>
+          <!-- Artículo desde catálogo -->
+          <div class="form-grupo">
+            <label class="form-label">Artículo del catálogo <small class="texto-suave">(opcional)</small></label>
+            <select class="form-select" id="etArticulo" onchange="cargarDesdeArticulo()">
+              <option value="">— O ingresá datos manuales —</option>
+            </select>
+          </div>
+
+          <div class="separador"></div>
+
+          <div class="form-fila" style="margin-top:12px">
+            <div class="form-grupo">
+              <label class="form-label">Línea 1 (texto superior)</label>
+              <input type="text" class="form-input" id="etL1"
+                placeholder="GRACIAS" oninput="actualizarPreview()">
+            </div>
+            <div class="form-grupo">
+              <label class="form-label">Línea 2 (texto inferior)</label>
+              <input type="text" class="form-input" id="etL2"
+                placeholder="POR SU COMPRA" oninput="actualizarPreview()">
+            </div>
+          </div>
+
+          <div class="form-grupo">
+            <label class="form-label">Valor del código *</label>
+            <input type="text" class="form-input" id="etCodigo"
+              placeholder="Ej: D-30-UNI o 7506339390230"
+              oninput="actualizarPreview()">
+          </div>
+
+          <div class="form-grupo">
+            <label class="form-label">Tipo de código</label>
+            <div class="tipo-radio">
+              <label>
+                <input type="radio" name="etTipo" value="code128" checked onchange="actualizarPreview()">
+                <span>▐▌▌ Code-128</span>
+              </label>
+              <label>
+                <input type="radio" name="etTipo" value="ean13" onchange="actualizarPreview()">
+                <span>▐▌▌ EAN-13</span>
+              </label>
+              <label>
+                <input type="radio" name="etTipo" value="qr" onchange="actualizarPreview()">
+                <span>▦ QR Code</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-fila">
+            <div class="form-grupo">
+              <label class="form-label">Cantidad de etiquetas</label>
+              <input type="number" class="form-input" id="etCantidad"
+                value="36" min="1" max="108" step="1"
+                oninput="actualizarCantidad()">
+              <small class="texto-suave" style="font-size:11px">Máx. 108 por hoja</small>
+            </div>
+            <div class="form-grupo">
+              <label class="form-label">Columnas por fila</label>
+              <select class="form-select" id="etColumnas" onchange="actualizarColumnas()">
+                <option value="4" selected>4 columnas</option>
+                <option value="3">3 columnas</option>
+                <option value="2">2 columnas</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn-acento" style="width:100%;margin-top:4px" onclick="generarHoja()">
+            ⟳ Generar hoja de etiquetas
+          </button>
+        </div>
+
+        <!-- Columna derecha: preview -->
+        <div>
+          <div class="form-label" style="margin-bottom:8px">Vista previa de etiqueta</div>
+          <div class="preview-label" id="previewLabel">
+            <div class="texto-suave" style="font-size:13px">Completá los campos para ver la previsualización</div>
+          </div>
+          <div style="font-size:11px;color:var(--texto-suave);margin-top:8px;text-align:center">
+            Tamaño real: ~48mm × 32mm · 4 columnas · 9 filas = 36 por hoja
+          </div>
+
+          <div class="card" style="margin-top:16px;background:#eff6ff;border-color:#bfdbfe">
+            <div style="font-size:13px;color:#1e40af;font-weight:600;margin-bottom:6px">💡 Cómo usar</div>
+            <ol style="font-size:12px;color:#1e40af;padding-left:16px;line-height:1.8">
+              <li>Completá el texto y el código</li>
+              <li>Hacé clic en <b>Generar hoja</b></li>
+              <li>Revisá la vista previa abajo</li>
+              <li>Hacé clic en <b>🖨️ Imprimir hoja</b></li>
+              <li>En el diálogo de impresión:<br>
+                  <b>Sin márgenes</b> · Escala 100%</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOJA A4 -->
+    <div class="sheet-preview-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--texto-suave)">Vista previa de la hoja A4</div>
+        <button class="btn btn-ghost btn-sm" onclick="generarHoja()">⟳ Actualizar</button>
+      </div>
+      <div id="sheetA4">
+        <div style="grid-column:1/-1;padding:40px;text-align:center;color:#94a3b8;font-size:14px">
+          Completá los campos y hacé clic en "Generar hoja de etiquetas" para ver la vista previa.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="app-footer">© <span class="anio-actual"></span> Stockia.</footer>
+</div>
+
+<!-- Scripts -->
+<script src="js/logo.js?v=5.2" defer></script>
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/global.js?v=5.2"></script>
+<!-- JsBarcode para Code-128 y EAN-13 -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<!-- QRCode.js para QR -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+let empresa = null, empresaId = null;
+
+(async () => {
+  const sesion = await verificarSesion();
+  if (!sesion) return;
+  if (sesion.esAdminGlobal && !sesion.empresa) {
+    window.location.href = 'admin-global.html'; return;
+  }
+  empresa   = sesion.empresa;
+  empresaId = empresa?.id;
+  construirNav();
+  cargarArticulosSelect();
+})();
+
+// ── Cargar artículos del catálogo ────────────────────────
+async function cargarArticulosSelect() {
+  if (!empresaId) return;
+  const { data } = await sb.from('articulos')
+    .select('id,nombre,codigo,codigo_barras,precio')
+    .eq('empresa_id', empresaId).eq('activo', true).order('nombre');
+
+  const sel = document.getElementById('etArticulo');
+  sel.innerHTML = '<option value="">— O ingresá datos manuales —</option>';
+  (data || []).forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify({
+      nombre: a.nombre,
+      codigo: a.codigo_barras || a.codigo || '',
+      precio: a.precio,
+    });
+    opt.textContent = `${a.nombre}${a.codigo_barras ? ' · ' + a.codigo_barras : a.codigo ? ' · ' + a.codigo : ''}`;
+    sel.appendChild(opt);
+  });
+}
+
+// ── Auto-llenar desde artículo ───────────────────────────
+function cargarDesdeArticulo() {
+  const v = document.getElementById('etArticulo').value;
+  if (!v) return;
+  try {
+    const art = JSON.parse(v);
+    document.getElementById('etL1').value     = art.nombre.toUpperCase();
+    document.getElementById('etL2').value     = art.precio ? `$${Number(art.precio).toLocaleString('es-AR')}` : '';
+    document.getElementById('etCodigo').value = art.codigo;
+    actualizarPreview();
+  } catch {}
+}
+
+// ── Preview de una etiqueta ──────────────────────────────
+function actualizarPreview() {
+  const l1     = document.getElementById('etL1').value.trim();
+  const l2     = document.getElementById('etL2').value.trim();
+  const codigo = document.getElementById('etCodigo').value.trim();
+  const tipo   = document.querySelector('input[name="etTipo"]:checked').value;
+  const wrap   = document.getElementById('previewLabel');
+
+  if (!codigo) {
+    wrap.innerHTML = '<div class="texto-suave" style="font-size:13px">Ingresá un código para ver la previsualización</div>';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  if (l1) { const d = document.createElement('div'); d.className = 'et-l1'; d.textContent = l1; wrap.appendChild(d); }
+  if (l2) { const d = document.createElement('div'); d.className = 'et-l2'; d.textContent = l2; wrap.appendChild(d); }
+
+  if (tipo === 'qr') {
+    const div = document.createElement('div');
+    wrap.appendChild(div);
+    try {
+      new QRCode(div, { text: codigo, width: 100, height: 100, correctLevel: QRCode.CorrectLevel.M });
+    } catch { div.textContent = 'QR no disponible'; }
+    const sub = document.createElement('div');
+    sub.className = 'et-sub'; sub.textContent = codigo;
+    wrap.appendChild(sub);
+  } else {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.style.width = '100%';
+    wrap.appendChild(svg);
+    try {
+      JsBarcode(svg, codigo, {
+        format:       tipo === 'ean13' ? 'EAN13' : 'CODE128',
+        width:        2,
+        height:       50,
+        displayValue: true,
+        fontSize:     12,
+        margin:       4,
+        lineColor:    '#000',
+      });
+    } catch (e) {
+      wrap.innerHTML = `<div style="color:var(--rojo);font-size:12px">⚠️ ${e.message || 'Código inválido para este formato'}</div>`;
+    }
+  }
+}
+
+// ── Actualizar columnas en la hoja ───────────────────────
+function actualizarColumnas() {
+  const cols = document.getElementById('etColumnas').value;
+  document.getElementById('sheetA4').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+}
+
+function actualizarCantidad() { /* solo relee al generar */ }
+
+// ── Generar hoja completa ────────────────────────────────
+function generarHoja() {
+  const l1     = document.getElementById('etL1').value.trim();
+  const l2     = document.getElementById('etL2').value.trim();
+  const codigo = document.getElementById('etCodigo').value.trim();
+  const tipo   = document.querySelector('input[name="etTipo"]:checked').value;
+  const cant   = Math.min(108, Math.max(1, parseInt(document.getElementById('etCantidad').value) || 36));
+  const cols   = parseInt(document.getElementById('etColumnas').value) || 4;
+
+  if (!codigo) {
+    mostrarAlerta('Ingresá un código para generar la hoja', 'error');
+    return;
+  }
+
+  const sheet = document.getElementById('sheetA4');
+  sheet.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  sheet.innerHTML = '';
+
+  for (let i = 0; i < cant; i++) {
+    const et = document.createElement('div');
+    et.className = 'et';
+
+    if (l1) { const d = document.createElement('div'); d.className = 'et-l1'; d.textContent = l1; et.appendChild(d); }
+    if (l2) { const d = document.createElement('div'); d.className = 'et-l2'; d.textContent = l2; et.appendChild(d); }
+
+    if (tipo === 'qr') {
+      const qwrap = document.createElement('div');
+      qwrap.style.lineHeight = '0';
+      et.appendChild(qwrap);
+      try {
+        new QRCode(qwrap, {
+          text: codigo, width: 72, height: 72,
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+      } catch {}
+      const sub = document.createElement('div');
+      sub.className = 'et-sub'; sub.textContent = codigo;
+      et.appendChild(sub);
+    } else {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      et.appendChild(svg);
+      try {
+        JsBarcode(svg, codigo, {
+          format:       tipo === 'ean13' ? 'EAN13' : 'CODE128',
+          width:        1.5,
+          height:       36,
+          displayValue: true,
+          fontSize:     9,
+          margin:       2,
+          lineColor:    '#000',
+        });
+        svg.style.maxWidth = '100%';
+      } catch (e) {
+        const err = document.createElement('div');
+        err.style.cssText = 'color:red;font-size:8pt;text-align:center';
+        err.textContent = e.message || 'Código inválido';
+        et.innerHTML = ''; et.appendChild(err);
+      }
+    }
+
+    sheet.appendChild(et);
+  }
+
+  mostrarAlerta(`${cant} etiquetas generadas ✓`, 'exito');
+  sheet.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── Imprimir ─────────────────────────────────────────────
+function imprimirHoja() {
+  const sheet = document.getElementById('sheetA4');
+  const vacio = sheet.querySelector('.texto-suave');
+  if (vacio) {
+    mostrarAlerta('Primero generá la hoja de etiquetas', 'error');
+    return;
+  }
+  window.print();
+}
+</script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .catch(err => console.warn('SW:', err));
+      });
+    }
+  </script>
+</body>
+</html>

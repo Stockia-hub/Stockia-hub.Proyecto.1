@@ -171,6 +171,7 @@ function construirNav() {
     const icono  = empresa?.modulo_articulos_icono  || '📦';
     const nombre = empresa?.modulo_articulos_nombre || 'Artículos';
     links.push({ href: 'articulos.html', icono, label: nombre });
+    links.push({ href: 'etiquetas.html', icono: '🏷️', label: 'Etiquetas' });
   }
   if (modulos.clientes) {
     links.push({ href: 'clientes.html', icono: '👥', label: 'Clientes' });
