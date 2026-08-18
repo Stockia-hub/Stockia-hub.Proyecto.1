@@ -14,126 +14,121 @@
   <link rel="stylesheet" href="css/global.css?v=5.2">
 
   <style>
-    /* ── Pantalla normal ───────────────────────────────────── */
-    .config-wrap {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-    @media (min-width: 700px) {
-      .config-wrap { grid-template-columns: 1fr 1fr; }
-    }
+    /* ─── Layout ─────────────────────────────────────────── */
+    .et-grid { display:grid; grid-template-columns:1fr; gap:16px; }
+    @media(min-width:700px){ .et-grid{ grid-template-columns:1fr 1fr; } }
 
-    .preview-label {
-      border: 2px dashed #aaa;
-      border-radius: 6px;
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100px;
-      background: #fff;
-      gap: 4px;
-    }
-    .preview-label .et-l1  { font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
-    .preview-label .et-l2  { font-size: 11px; font-weight: 500; text-align: center; color: #444; line-height: 1.2; }
-    .preview-label .et-sub { font-size: 11px; color: #555; font-weight: 500; }
-    .preview-label svg     { max-width: 100%; }
-
-    .tipo-radio { display: flex; gap: 16px; flex-wrap: wrap; }
+    /* ─── Tipos de código ────────────────────────────────── */
+    .tipo-radio { display:flex; gap:10px; flex-wrap:wrap; }
     .tipo-radio label {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 14px; font-weight: 500; cursor: pointer;
-      padding: 8px 14px;
-      border: 2px solid var(--borde);
-      border-radius: var(--r-md);
-      transition: var(--transition);
+      display:flex; align-items:center; gap:6px;
+      font-size:13px; font-weight:600; cursor:pointer;
+      padding:8px 14px;
+      border:2px solid var(--borde); border-radius:var(--r-md);
+      transition:var(--transition); user-select:none;
     }
-    .tipo-radio input[type=radio] { display: none; }
-    .tipo-radio input:checked + span { color: var(--azul-nav); }
-    .tipo-radio label:has(input:checked) {
-      border-color: var(--azul-nav);
-      background: #eff6ff;
+    .tipo-radio input[type=radio]{ display:none; }
+    .tipo-radio label:has(input:checked){
+      border-color:var(--azul-nav); background:#eff6ff; color:var(--azul-nav);
     }
 
-    .sheet-preview-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--borde);
-      border-radius: var(--r-lg);
-      background: #f8fafc;
-      padding: 16px;
-      margin-top: 16px;
+    /* ─── Preview ────────────────────────────────────────── */
+    .preview-label {
+      border:2px dashed #aaa; border-radius:8px;
+      padding:12px; min-height:110px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:#fff; gap:3px;
     }
+    .preview-label .et-l1{ font-size:13px; font-weight:700; text-align:center; }
+    .preview-label .et-l2{ font-size:11px; font-weight:500; text-align:center; color:#444; }
+    .preview-label .et-sub{ font-size:11px; color:#555; }
+    .preview-label svg{ max-width:100%; }
 
-    /* ── HOJA A4 en pantalla ───────────────────────────────── */
-    #sheetA4 {
-      width: 210mm;
-      min-height: 297mm;
-      background: #fff;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      align-content: start;
-      box-shadow: 0 4px 20px rgba(0,0,0,.12);
-      box-sizing: border-box;
-      padding: 6mm;
-      gap: 0;
+    /* ─── Plantillas ─────────────────────────────────────── */
+    .plantillas-grid {
+      display:grid; grid-template-columns:1fr;
+      gap:10px; margin-top:4px;
     }
+    @media(min-width:600px){ .plantillas-grid{ grid-template-columns:repeat(2,1fr); } }
+    @media(min-width:900px){ .plantillas-grid{ grid-template-columns:repeat(3,1fr); } }
 
-    /* ── Etiqueta individual ───────────────────────────────── */
-    .et {
-      border: 1.5px dashed #bbb;
-      box-sizing: border-box;
-      padding: 3.5mm 3mm;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      height: 32mm;
-      overflow: hidden;
+    .plantilla-card {
+      background:#fff; border:1px solid var(--borde); border-radius:var(--r-lg);
+      padding:14px 16px; display:flex; flex-direction:column; gap:8px;
+      box-shadow:var(--sombra-sm); transition:var(--transition);
     }
-    .et .et-l1  { font-size: 8.5pt; font-weight: 700; text-align: center; line-height: 1.2; font-family: 'Poppins', sans-serif; }
-    .et .et-l2  { font-size: 7.5pt; font-weight: 500; text-align: center; color: #333; line-height: 1.2; font-family: 'Poppins', sans-serif; }
-    .et svg     { max-width: 100%; height: auto; }
-    .et canvas  { max-width: 100%; height: auto !important; }
-    .et .et-sub { font-size: 7pt; color: #444; font-weight: 500; font-family: 'Poppins', sans-serif; }
+    .plantilla-card:hover{ box-shadow:var(--sombra-md); }
+    .plantilla-nombre{
+      font-size:14px; font-weight:700; color:var(--azul-nav);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .plantilla-meta{ font-size:12px; color:var(--texto-suave); line-height:1.6; }
+    .plantilla-acciones{ display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
 
-    /* ── IMPRESIÓN ─────────────────────────────────────────── */
-    @media print {
-      @page {
-        size: A4;
-        margin: 0;
-      }
-      body * { visibility: hidden !important; }
-      #sheetA4,
-      #sheetA4 * { visibility: visible !important; }
-      #sheetA4 {
-        position: fixed !important;
-        top: 0 !important; left: 0 !important;
-        width: 210mm !important;
-        min-height: 297mm !important;
-        box-shadow: none !important;
-        padding: 6mm !important;
-        margin: 0 !important;
+    .tipo-badge{
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
+    }
+    .tipo-code128{ background:#dbeafe; color:#1e40af; }
+    .tipo-ean13  { background:#ede9fe; color:#5b21b6; }
+    .tipo-qr     { background:#d1fae5; color:#065f46; }
+
+    /* ─── Hoja A4 ─────────────────────────────────────────── */
+    .sheet-wrap{
+      overflow-x:auto; border:1px solid var(--borde);
+      border-radius:var(--r-lg); background:#f1f5f9; padding:16px; margin-top:16px;
+    }
+    #sheetA4{
+      width:210mm; min-height:297mm; background:#fff;
+      margin:0 auto; display:grid;
+      grid-template-columns:repeat(4,1fr);
+      align-content:start;
+      box-shadow:0 4px 20px rgba(0,0,0,.12);
+      box-sizing:border-box; padding:6mm; gap:0;
+    }
+    .et{
+      border:1.5px dashed #bbb; box-sizing:border-box;
+      padding:3.5mm 3mm; height:32mm;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:2px; overflow:hidden;
+    }
+    .et .et-l1{ font-size:8.5pt; font-weight:700; text-align:center; line-height:1.2; font-family:'Poppins',sans-serif; }
+    .et .et-l2{ font-size:7.5pt; font-weight:500; text-align:center; color:#333; line-height:1.2; font-family:'Poppins',sans-serif; }
+    .et svg   { max-width:100%; height:auto; }
+    .et canvas{ max-width:100%; height:auto!important; }
+    .et .et-sub{ font-size:7pt; color:#444; font-family:'Poppins',sans-serif; }
+
+    /* ─── Modal guardar ──────────────────────────────────── */
+    #modalGuardar .modal{ max-width:400px; }
+
+    /* ─── Impresión ──────────────────────────────────────── */
+    @media print{
+      @page{ size:A4; margin:0; }
+      body *{ visibility:hidden!important; }
+      #sheetA4, #sheetA4 *{ visibility:visible!important; }
+      #sheetA4{
+        position:fixed!important; top:0!important; left:0!important;
+        width:210mm!important; min-height:297mm!important;
+        box-shadow:none!important; padding:6mm!important; margin:0!important;
       }
     }
   </style>
 </head>
 <body>
 <div class="app-layout">
+
+  <!-- NAV -->
   <header class="nav-header">
     <a href="dashboard.html" class="nav-logo" data-logo="nav"></a>
     <div id="navEmpresaBadge" class="nav-empresa-badge" style="display:none">
-      <span class="nav-empresa-dot"></span>
-      <span class="nav-empresa-nombre"></span>
+      <span class="nav-empresa-dot"></span><span class="nav-empresa-nombre"></span>
     </div>
     <ul class="nav-links" id="navLinks"></ul>
     <div class="nav-usuario">
       <div class="nav-usuario-info">
         <div class="nav-usuario-nombre" id="navNombre">-</div>
-        <div class="nav-usuario-rol" id="navRol">-</div>
+        <div class="nav-usuario-rol"    id="navRol">-</div>
       </div>
       <button class="btn-salir" onclick="cerrarSesion()">🚪 Salir</button>
     </div>
@@ -141,7 +136,6 @@
       <span class="bar"></span><span class="bar"></span><span class="bar"></span>
     </button>
   </header>
-
   <nav class="nav-menu-movil" id="navMenuMovil">
     <div class="usuario-info" id="menuUsuarioInfo"></div>
     <div class="empresa-info" id="menuEmpresaInfo" style="display:none"></div>
@@ -153,22 +147,37 @@
   <div class="nav-overlay" id="navOverlay" onclick="cerrarMenu()"></div>
 
   <main class="main-content">
+
+    <!-- HEADER -->
     <div class="page-header">
       <div>
         <div class="page-titulo">🏷️ Generador de Etiquetas</div>
-        <div class="page-subtitulo">Creá códigos de barras y QR para imprimir en A4</div>
+        <div class="page-subtitulo">Creá, guardá y reutilizá plantillas de etiquetas para imprimir en A4</div>
       </div>
       <button class="btn btn-acento" onclick="imprimirHoja()">🖨️ Imprimir hoja</button>
     </div>
 
-    <!-- CONFIGURACIÓN -->
+    <!-- ── PLANTILLAS GUARDADAS ────────────────────────────── -->
+    <div class="card mb-16">
+      <div class="card-titulo" style="justify-content:space-between">
+        <span>📋 Plantillas guardadas</span>
+        <span id="plantillasCount" class="badge badge-azul" style="display:none"></span>
+      </div>
+      <div id="plantillasWrap">
+        <div class="cargando"><div class="spinner"></div>Cargando plantillas...</div>
+      </div>
+    </div>
+
+    <!-- ── CONFIGURACIÓN ──────────────────────────────────── -->
     <div class="card mb-16">
       <div class="card-titulo">⚙️ Configuración de etiqueta</div>
-      <div class="config-wrap">
 
-        <!-- Columna izquierda: formulario -->
+      <!-- Input oculto para edición -->
+      <input type="hidden" id="etId">
+
+      <div class="et-grid">
+        <!-- Izquierda: formulario -->
         <div>
-          <!-- Artículo desde catálogo -->
           <div class="form-grupo">
             <label class="form-label">Artículo del catálogo <small class="texto-suave">(opcional)</small></label>
             <select class="form-select" id="etArticulo" onchange="cargarDesdeArticulo()">
@@ -182,12 +191,12 @@
             <div class="form-grupo">
               <label class="form-label">Línea 1 (texto superior)</label>
               <input type="text" class="form-input" id="etL1"
-                placeholder="GRACIAS" oninput="actualizarPreview()">
+                placeholder="Ej: GRACIAS" oninput="actualizarPreview()">
             </div>
             <div class="form-grupo">
               <label class="form-label">Línea 2 (texto inferior)</label>
               <input type="text" class="form-input" id="etL2"
-                placeholder="POR SU COMPRA" oninput="actualizarPreview()">
+                placeholder="Ej: POR SU COMPRA" oninput="actualizarPreview()">
             </div>
           </div>
 
@@ -201,18 +210,9 @@
           <div class="form-grupo">
             <label class="form-label">Tipo de código</label>
             <div class="tipo-radio">
-              <label>
-                <input type="radio" name="etTipo" value="code128" checked onchange="actualizarPreview()">
-                <span>▐▌▌ Code-128</span>
-              </label>
-              <label>
-                <input type="radio" name="etTipo" value="ean13" onchange="actualizarPreview()">
-                <span>▐▌▌ EAN-13</span>
-              </label>
-              <label>
-                <input type="radio" name="etTipo" value="qr" onchange="actualizarPreview()">
-                <span>▦ QR Code</span>
-              </label>
+              <label><input type="radio" name="etTipo" value="code128" checked onchange="actualizarPreview()"><span>▐▌▌ Code-128</span></label>
+              <label><input type="radio" name="etTipo" value="ean13"   onchange="actualizarPreview()"><span>▐▌▌ EAN-13</span></label>
+              <label><input type="radio" name="etTipo" value="qr"      onchange="actualizarPreview()"><span>▦ QR Code</span></label>
             </div>
           </div>
 
@@ -220,8 +220,7 @@
             <div class="form-grupo">
               <label class="form-label">Cantidad de etiquetas</label>
               <input type="number" class="form-input" id="etCantidad"
-                value="36" min="1" max="108" step="1"
-                oninput="actualizarCantidad()">
+                value="36" min="1" max="108">
               <small class="texto-suave" style="font-size:11px">Máx. 108 por hoja</small>
             </div>
             <div class="form-grupo">
@@ -234,52 +233,85 @@
             </div>
           </div>
 
-          <button class="btn btn-acento" style="width:100%;margin-top:4px" onclick="generarHoja()">
-            ⟳ Generar hoja de etiquetas
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <button class="btn btn-acento" style="flex:1;min-width:160px" onclick="generarHoja()">
+              ⟳ Generar hoja
+            </button>
+            <button class="btn btn-secundario" style="flex:1;min-width:160px" onclick="pedirNombrePlantilla()">
+              💾 Guardar plantilla
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="limpiarFormulario()" title="Limpiar campos">
+              ✕ Limpiar
+            </button>
+          </div>
+
+          <!-- Indicador de edición activa -->
+          <div id="editandoBanner" style="display:none;margin-top:10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r-md);font-size:13px;color:#92400e;display:flex;align-items:center;gap:8px">
+            ✏️ Editando plantilla — <b id="editandoNombre"></b>
+            <button onclick="limpiarFormulario()" class="btn btn-ghost btn-sm" style="margin-left:auto;padding:2px 8px;font-size:11px">Cancelar</button>
+          </div>
         </div>
 
-        <!-- Columna derecha: preview -->
+        <!-- Derecha: preview -->
         <div>
-          <div class="form-label" style="margin-bottom:8px">Vista previa de etiqueta</div>
+          <div class="form-label" style="margin-bottom:8px">Vista previa</div>
           <div class="preview-label" id="previewLabel">
             <div class="texto-suave" style="font-size:13px">Completá los campos para ver la previsualización</div>
           </div>
           <div style="font-size:11px;color:var(--texto-suave);margin-top:8px;text-align:center">
-            Tamaño real: ~48mm × 32mm · 4 columnas · 9 filas = 36 por hoja
+            ~48mm × 32mm · 4 col · 9 filas = 36 por hoja
           </div>
 
-          <div class="card" style="margin-top:16px;background:#eff6ff;border-color:#bfdbfe">
-            <div style="font-size:13px;color:#1e40af;font-weight:600;margin-bottom:6px">💡 Cómo usar</div>
-            <ol style="font-size:12px;color:#1e40af;padding-left:16px;line-height:1.8">
-              <li>Completá el texto y el código</li>
-              <li>Hacé clic en <b>Generar hoja</b></li>
-              <li>Revisá la vista previa abajo</li>
-              <li>Hacé clic en <b>🖨️ Imprimir hoja</b></li>
-              <li>En el diálogo de impresión:<br>
-                  <b>Sin márgenes</b> · Escala 100%</li>
+          <div class="card" style="margin-top:14px;background:#eff6ff;border-color:#bfdbfe">
+            <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:6px">💡 Cómo imprimir</div>
+            <ol style="font-size:12px;color:#1e40af;padding-left:16px;line-height:1.9;margin:0">
+              <li>Configurá y generá la hoja</li>
+              <li>Clic en <b>🖨️ Imprimir hoja</b></li>
+              <li>En el diálogo: <b>Sin márgenes</b>, Escala <b>100%</b></li>
             </ol>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- HOJA A4 -->
-    <div class="sheet-preview-wrap">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <!-- ── HOJA A4 ─────────────────────────────────────────── -->
+    <div class="sheet-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div style="font-size:13px;font-weight:700;color:var(--texto-suave)">Vista previa de la hoja A4</div>
         <button class="btn btn-ghost btn-sm" onclick="generarHoja()">⟳ Actualizar</button>
       </div>
       <div id="sheetA4">
-        <div style="grid-column:1/-1;padding:40px;text-align:center;color:#94a3b8;font-size:14px">
-          Completá los campos y hacé clic en "Generar hoja de etiquetas" para ver la vista previa.
+        <div style="grid-column:1/-1;padding:48px;text-align:center;color:#94a3b8;font-size:14px">
+          Completá los campos y hacé clic en "Generar hoja" para ver la vista previa.
         </div>
       </div>
     </div>
 
   </main>
-
   <footer class="app-footer">© <span class="anio-actual"></span> Stockia.</footer>
+</div>
+
+<!-- ── MODAL: Guardar plantilla ───────────────────────────── -->
+<div class="modal-overlay" id="modalGuardar">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-titulo" id="modalGuardarTitulo">💾 Guardar plantilla</div>
+      <button class="modal-cerrar" onclick="cerrarModal('modalGuardar')">✕</button>
+    </div>
+    <div class="form-grupo">
+      <label class="form-label">Nombre de la plantilla *</label>
+      <input type="text" class="form-input" id="etNombrePlantilla"
+        placeholder="Ej: Agradecimiento 30 unidades"
+        onkeydown="if(event.key==='Enter')guardarPlantilla()">
+      <small class="texto-suave" style="font-size:11px">
+        Un nombre descriptivo para encontrarla fácil.
+      </small>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalGuardar')">Cancelar</button>
+      <button class="btn btn-acento" onclick="guardarPlantilla()">💾 Guardar</button>
+    </div>
+  </div>
 </div>
 
 <!-- Scripts -->
@@ -287,188 +319,321 @@
 <script src="js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/global.js?v=5.2"></script>
-<!-- JsBarcode para Code-128 y EAN-13 -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<!-- QRCode.js para QR -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
 let empresa = null, empresaId = null;
 
+// ── INIT ─────────────────────────────────────────────────
 (async () => {
   const sesion = await verificarSesion();
   if (!sesion) return;
-  if (sesion.esAdminGlobal && !sesion.empresa) {
-    window.location.href = 'admin-global.html'; return;
-  }
+  if (sesion.esAdminGlobal && !sesion.empresa) { window.location.href = 'admin-global.html'; return; }
   empresa   = sesion.empresa;
   empresaId = empresa?.id;
   construirNav();
-  cargarArticulosSelect();
+  await Promise.all([cargarArticulosSelect(), cargarPlantillas()]);
 })();
 
-// ── Cargar artículos del catálogo ────────────────────────
+// ── ARTÍCULOS DEL CATÁLOGO ───────────────────────────────
 async function cargarArticulosSelect() {
   if (!empresaId) return;
   const { data } = await sb.from('articulos')
     .select('id,nombre,codigo,codigo_barras,precio')
     .eq('empresa_id', empresaId).eq('activo', true).order('nombre');
-
   const sel = document.getElementById('etArticulo');
   sel.innerHTML = '<option value="">— O ingresá datos manuales —</option>';
   (data || []).forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = JSON.stringify({
-      nombre: a.nombre,
-      codigo: a.codigo_barras || a.codigo || '',
-      precio: a.precio,
-    });
-    opt.textContent = `${a.nombre}${a.codigo_barras ? ' · ' + a.codigo_barras : a.codigo ? ' · ' + a.codigo : ''}`;
+    const opt      = document.createElement('option');
+    opt.value      = JSON.stringify({ nombre: a.nombre, codigo: a.codigo_barras || a.codigo || '', precio: a.precio });
+    opt.textContent= `${a.nombre}${a.codigo_barras ? ' · '+a.codigo_barras : a.codigo ? ' · '+a.codigo : ''}`;
     sel.appendChild(opt);
   });
 }
 
-// ── Auto-llenar desde artículo ───────────────────────────
 function cargarDesdeArticulo() {
   const v = document.getElementById('etArticulo').value;
   if (!v) return;
   try {
-    const art = JSON.parse(v);
-    document.getElementById('etL1').value     = art.nombre.toUpperCase();
-    document.getElementById('etL2').value     = art.precio ? `$${Number(art.precio).toLocaleString('es-AR')}` : '';
-    document.getElementById('etCodigo').value = art.codigo;
+    const a = JSON.parse(v);
+    document.getElementById('etL1').value     = a.nombre.toUpperCase();
+    document.getElementById('etL2').value     = a.precio ? '$'+Number(a.precio).toLocaleString('es-AR') : '';
+    document.getElementById('etCodigo').value = a.codigo;
     actualizarPreview();
   } catch {}
 }
 
-// ── Preview de una etiqueta ──────────────────────────────
+// ── PLANTILLAS — CRUD ────────────────────────────────────
+
+async function cargarPlantillas() {
+  if (!empresaId) return;
+  const wrap = document.getElementById('plantillasWrap');
+  wrap.innerHTML = '<div class="cargando"><div class="spinner"></div>Cargando...</div>';
+
+  const { data, error } = await sb
+    .from('plantillas_etiquetas')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('created_at', { ascending: false });
+
+  const badge = document.getElementById('plantillasCount');
+
+  if (error) {
+    wrap.innerHTML = `<div class="estado-vacio"><div class="estado-vacio-desc">Error al cargar plantillas</div></div>`;
+    return;
+  }
+
+  if (!data?.length) {
+    badge.style.display = 'none';
+    wrap.innerHTML = `
+      <div class="estado-vacio" style="padding:24px">
+        <div class="estado-vacio-icono" style="font-size:36px">📋</div>
+        <div class="estado-vacio-titulo">Sin plantillas guardadas</div>
+        <div class="estado-vacio-desc">Configurá una etiqueta y guardala para reutilizarla.</div>
+      </div>`;
+    return;
+  }
+
+  badge.style.display = 'inline-flex';
+  badge.textContent   = data.length + (data.length === 1 ? ' plantilla' : ' plantillas');
+
+  const TIPO_LABEL = { code128:'Code-128', ean13:'EAN-13', qr:'QR Code' };
+  const TIPO_CLS   = { code128:'tipo-code128', ean13:'tipo-ean13', qr:'tipo-qr' };
+  const TIPO_ICO   = { code128:'▐▌▌', ean13:'▐▌▌', qr:'▦' };
+
+  wrap.innerHTML = `<div class="plantillas-grid">${data.map(p => `
+    <div class="plantilla-card" id="pc-${p.id}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div class="plantilla-nombre">${escHtml(p.nombre)}</div>
+        <span class="tipo-badge ${TIPO_CLS[p.tipo]||'tipo-code128'}">
+          ${TIPO_ICO[p.tipo]||'▐▌▌'} ${TIPO_LABEL[p.tipo]||p.tipo}
+        </span>
+      </div>
+      <div class="plantilla-meta">
+        ${p.linea1 ? `<b>${escHtml(p.linea1)}</b>${p.linea2 ? ' / '+escHtml(p.linea2) : ''}<br>` : ''}
+        Código: <code style="font-size:11px">${escHtml(p.codigo)}</code><br>
+        ${p.cantidad} etiquetas · ${p.columnas} columnas
+      </div>
+      <div class="plantilla-acciones">
+        <button class="btn btn-sm btn-acento" onclick="cargarPlantilla(${escAttr(p)})">
+          📋 Usar
+        </button>
+        <button class="btn btn-sm btn-secundario" onclick="editarPlantilla(${escAttr(p)})">
+          ✏️ Editar
+        </button>
+        <button class="btn btn-sm btn-peligro" onclick="eliminarPlantilla('${p.id}','${escHtml(p.nombre)}')">
+          🗑️ Eliminar
+        </button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(p){ return "'" + JSON.stringify(p).replace(/'/g,"\\'") + "'"; }
+
+// Cargar plantilla en el formulario y generar hoja
+function cargarPlantilla(p) {
+  if (typeof p === 'string') p = JSON.parse(p);
+  _llenarFormulario(p);
+  generarHoja();
+  document.querySelector('.sheet-wrap')?.scrollIntoView({ behavior:'smooth' });
+}
+
+// Cargar para editar (sin generar)
+function editarPlantilla(p) {
+  if (typeof p === 'string') p = JSON.parse(p);
+  _llenarFormulario(p);
+  document.getElementById('etId').value = p.id;
+  const banner = document.getElementById('editandoBanner');
+  banner.style.display = 'flex';
+  document.getElementById('editandoNombre').textContent = p.nombre;
+  document.querySelector('.card').scrollIntoView({ behavior:'smooth' });
+}
+
+function _llenarFormulario(p) {
+  document.getElementById('etL1').value      = p.linea1  || '';
+  document.getElementById('etL2').value      = p.linea2  || '';
+  document.getElementById('etCodigo').value  = p.codigo  || '';
+  document.getElementById('etCantidad').value= p.cantidad|| 36;
+  document.getElementById('etColumnas').value= p.columnas|| 4;
+  const radio = document.querySelector(`input[name="etTipo"][value="${p.tipo||'code128'}"]`);
+  if (radio) radio.checked = true;
+  actualizarPreview();
+}
+
+async function eliminarPlantilla(id, nombre) {
+  if (!confirm(`¿Eliminar la plantilla "${nombre}"?`)) return;
+  const { error } = await sb.from('plantillas_etiquetas').delete().eq('id', id);
+  if (error) { mostrarAlerta('Error al eliminar: ' + error.message, 'error'); return; }
+  mostrarAlerta('Plantilla eliminada', 'exito');
+  cargarPlantillas();
+}
+
+// ── GUARDAR / ACTUALIZAR ─────────────────────────────────
+
+function pedirNombrePlantilla() {
+  const codigo = document.getElementById('etCodigo').value.trim();
+  if (!codigo) { mostrarAlerta('Ingresá un código antes de guardar', 'error'); return; }
+
+  const editId = document.getElementById('etId').value;
+  if (editId) {
+    // Edición directa sin pedir nombre
+    guardarPlantilla();
+  } else {
+    document.getElementById('etNombrePlantilla').value = '';
+    document.getElementById('modalGuardarTitulo').textContent = '💾 Guardar plantilla';
+    abrirModal('modalGuardar');
+    setTimeout(() => document.getElementById('etNombrePlantilla').focus(), 100);
+  }
+}
+
+async function guardarPlantilla() {
+  const editId = document.getElementById('etId').value;
+  const nombre = editId
+    ? document.getElementById('editandoNombre').textContent
+    : document.getElementById('etNombrePlantilla').value.trim();
+
+  if (!nombre) { mostrarAlerta('Escribí un nombre para la plantilla', 'error'); return; }
+
+  const datos = {
+    empresa_id: empresaId,
+    nombre,
+    linea1:  document.getElementById('etL1').value.trim()     || null,
+    linea2:  document.getElementById('etL2').value.trim()     || null,
+    codigo:  document.getElementById('etCodigo').value.trim(),
+    tipo:    document.querySelector('input[name="etTipo"]:checked').value,
+    columnas:parseInt(document.getElementById('etColumnas').value) || 4,
+    cantidad:parseInt(document.getElementById('etCantidad').value)  || 36,
+  };
+
+  if (!datos.codigo) { mostrarAlerta('El código es obligatorio', 'error'); return; }
+
+  let error;
+  if (editId) {
+    ({ error } = await sb.from('plantillas_etiquetas').update(datos).eq('id', editId));
+  } else {
+    ({ error } = await sb.from('plantillas_etiquetas').insert(datos));
+  }
+
+  if (error) { mostrarAlerta('Error: ' + error.message, 'error'); return; }
+
+  mostrarAlerta(editId ? 'Plantilla actualizada ✓' : 'Plantilla guardada ✓', 'exito');
+  cerrarModal('modalGuardar');
+  limpiarFormulario();
+  cargarPlantillas();
+}
+
+function limpiarFormulario() {
+  document.getElementById('etId').value = '';
+  document.getElementById('etL1').value = '';
+  document.getElementById('etL2').value = '';
+  document.getElementById('etCodigo').value = '';
+  document.getElementById('etCantidad').value = 36;
+  document.getElementById('etColumnas').value = 4;
+  document.getElementById('etArticulo').value = '';
+  document.querySelector('input[name="etTipo"][value="code128"]').checked = true;
+  document.getElementById('editandoBanner').style.display = 'none';
+  document.getElementById('previewLabel').innerHTML =
+    '<div class="texto-suave" style="font-size:13px">Completá los campos para ver la previsualización</div>';
+}
+
+// ── PREVIEW ──────────────────────────────────────────────
+
 function actualizarPreview() {
   const l1     = document.getElementById('etL1').value.trim();
   const l2     = document.getElementById('etL2').value.trim();
   const codigo = document.getElementById('etCodigo').value.trim();
   const tipo   = document.querySelector('input[name="etTipo"]:checked').value;
   const wrap   = document.getElementById('previewLabel');
-
   if (!codigo) {
     wrap.innerHTML = '<div class="texto-suave" style="font-size:13px">Ingresá un código para ver la previsualización</div>';
     return;
   }
-
   wrap.innerHTML = '';
-  if (l1) { const d = document.createElement('div'); d.className = 'et-l1'; d.textContent = l1; wrap.appendChild(d); }
-  if (l2) { const d = document.createElement('div'); d.className = 'et-l2'; d.textContent = l2; wrap.appendChild(d); }
+  if (l1){ const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; wrap.appendChild(d); }
+  if (l2){ const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; wrap.appendChild(d); }
 
   if (tipo === 'qr') {
     const div = document.createElement('div');
     wrap.appendChild(div);
-    try {
-      new QRCode(div, { text: codigo, width: 100, height: 100, correctLevel: QRCode.CorrectLevel.M });
-    } catch { div.textContent = 'QR no disponible'; }
-    const sub = document.createElement('div');
-    sub.className = 'et-sub'; sub.textContent = codigo;
-    wrap.appendChild(sub);
+    try { new QRCode(div,{text:codigo,width:90,height:90,correctLevel:QRCode.CorrectLevel.M}); } catch {}
+    const sub=document.createElement('div'); sub.className='et-sub'; sub.textContent=codigo; wrap.appendChild(sub);
   } else {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.style.width = '100%';
-    wrap.appendChild(svg);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.style.maxWidth='100%'; wrap.appendChild(svg);
     try {
       JsBarcode(svg, codigo, {
-        format:       tipo === 'ean13' ? 'EAN13' : 'CODE128',
-        width:        2,
-        height:       50,
-        displayValue: true,
-        fontSize:     12,
-        margin:       4,
-        lineColor:    '#000',
+        format: tipo==='ean13'?'EAN13':'CODE128',
+        width:2, height:50, displayValue:true, fontSize:12, margin:4, lineColor:'#000',
       });
-    } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--rojo);font-size:12px">⚠️ ${e.message || 'Código inválido para este formato'}</div>`;
+    } catch(e) {
+      wrap.innerHTML=`<div style="color:var(--rojo);font-size:12px">⚠️ ${e.message||'Código inválido para este formato'}</div>`;
     }
   }
 }
 
-// ── Actualizar columnas en la hoja ───────────────────────
+// ── GENERAR HOJA ─────────────────────────────────────────
+
 function actualizarColumnas() {
   const cols = document.getElementById('etColumnas').value;
-  document.getElementById('sheetA4').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  document.getElementById('sheetA4').style.gridTemplateColumns = `repeat(${cols},1fr)`;
 }
 
-function actualizarCantidad() { /* solo relee al generar */ }
-
-// ── Generar hoja completa ────────────────────────────────
 function generarHoja() {
   const l1     = document.getElementById('etL1').value.trim();
   const l2     = document.getElementById('etL2').value.trim();
   const codigo = document.getElementById('etCodigo').value.trim();
   const tipo   = document.querySelector('input[name="etTipo"]:checked').value;
-  const cant   = Math.min(108, Math.max(1, parseInt(document.getElementById('etCantidad').value) || 36));
-  const cols   = parseInt(document.getElementById('etColumnas').value) || 4;
+  const cant   = Math.min(108, Math.max(1, parseInt(document.getElementById('etCantidad').value)||36));
+  const cols   = parseInt(document.getElementById('etColumnas').value)||4;
 
-  if (!codigo) {
-    mostrarAlerta('Ingresá un código para generar la hoja', 'error');
-    return;
-  }
+  if (!codigo) { mostrarAlerta('Ingresá un código para generar la hoja', 'error'); return; }
 
   const sheet = document.getElementById('sheetA4');
-  sheet.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  sheet.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   sheet.innerHTML = '';
 
   for (let i = 0; i < cant; i++) {
     const et = document.createElement('div');
     et.className = 'et';
-
-    if (l1) { const d = document.createElement('div'); d.className = 'et-l1'; d.textContent = l1; et.appendChild(d); }
-    if (l2) { const d = document.createElement('div'); d.className = 'et-l2'; d.textContent = l2; et.appendChild(d); }
+    if (l1){ const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; et.appendChild(d); }
+    if (l2){ const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; et.appendChild(d); }
 
     if (tipo === 'qr') {
-      const qwrap = document.createElement('div');
-      qwrap.style.lineHeight = '0';
-      et.appendChild(qwrap);
-      try {
-        new QRCode(qwrap, {
-          text: codigo, width: 72, height: 72,
-          correctLevel: QRCode.CorrectLevel.M,
-        });
-      } catch {}
-      const sub = document.createElement('div');
-      sub.className = 'et-sub'; sub.textContent = codigo;
-      et.appendChild(sub);
+      const qw = document.createElement('div'); qw.style.lineHeight='0';
+      et.appendChild(qw);
+      try { new QRCode(qw,{text:codigo,width:68,height:68,correctLevel:QRCode.CorrectLevel.M}); } catch {}
+      const sub=document.createElement('div'); sub.className='et-sub'; sub.textContent=codigo; et.appendChild(sub);
     } else {
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
       et.appendChild(svg);
       try {
         JsBarcode(svg, codigo, {
-          format:       tipo === 'ean13' ? 'EAN13' : 'CODE128',
-          width:        1.5,
-          height:       36,
-          displayValue: true,
-          fontSize:     9,
-          margin:       2,
-          lineColor:    '#000',
+          format: tipo==='ean13'?'EAN13':'CODE128',
+          width:1.5, height:34, displayValue:true, fontSize:8, margin:2, lineColor:'#000',
         });
-        svg.style.maxWidth = '100%';
-      } catch (e) {
-        const err = document.createElement('div');
-        err.style.cssText = 'color:red;font-size:8pt;text-align:center';
-        err.textContent = e.message || 'Código inválido';
-        et.innerHTML = ''; et.appendChild(err);
+        svg.style.maxWidth='100%';
+      } catch(e) {
+        et.innerHTML=''; 
+        const err=document.createElement('div');
+        err.style.cssText='color:red;font-size:7pt;text-align:center';
+        err.textContent=e.message||'Código inválido'; et.appendChild(err);
       }
     }
-
     sheet.appendChild(et);
   }
-
   mostrarAlerta(`${cant} etiquetas generadas ✓`, 'exito');
-  sheet.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  sheet.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
-// ── Imprimir ─────────────────────────────────────────────
+// ── IMPRIMIR ─────────────────────────────────────────────
+
 function imprimirHoja() {
   const sheet = document.getElementById('sheetA4');
-  const vacio = sheet.querySelector('.texto-suave');
-  if (vacio) {
-    mostrarAlerta('Primero generá la hoja de etiquetas', 'error');
-    return;
+  if (!sheet.querySelector('.et')) {
+    mostrarAlerta('Primero generá la hoja de etiquetas', 'error'); return;
   }
   window.print();
 }
@@ -477,8 +642,7 @@ function imprimirHoja() {
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .catch(err => console.warn('SW:', err));
+        navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
       });
     }
   </script>
