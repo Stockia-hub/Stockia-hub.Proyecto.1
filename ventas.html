@@ -1390,7 +1390,7 @@ async function guardarCarrito() {
 // TABLA DE VENTAS
 // ════════════════════════════════════════════════════════════
 async function cargarArticulosSelect() {
-  const{data}=await sb.from('articulos').select('id,nombre,precio,stock').eq('empresa_id',empresaId).eq('activo',true).order('nombre');
+  const{data}=await sb.from('articulos').select('id,nombre,precio,stock,codigo,codigo_barras').eq('empresa_id',empresaId).eq('activo',true).order('nombre');
   articulos=data||[];
   document.getElementById('ventaArticulo').innerHTML=`<option value="">— Seleccioná —</option>`+
     articulos.map(a=>`<option value="${a.id}" data-precio="${a.precio}">${a.nombre} (stock: ${a.stock})</option>`).join('');
