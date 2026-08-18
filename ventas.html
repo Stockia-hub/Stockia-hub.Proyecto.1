@@ -450,14 +450,78 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: Nueva Venta — KIOSCO (carrito) ═══ -->
+<!-- ═══ MODAL: Nueva Venta — CARRITO / MULTI-ARTÍCULO ═══ -->
 <div class="modal-overlay" id="modalCarrito">
   <div class="modal" style="max-width:640px;max-height:95vh">
     <div class="modal-header">
-      <div class="modal-titulo">🛒 Nueva Venta</div>
+      <div class="modal-titulo">🛒 Ticket / Multi-artículo</div>
       <button class="modal-cerrar" onclick="cerrarModal('modalCarrito')">✕</button>
     </div>
 
+    <!-- BOTÓN ESCANEAR — acción principal en mobile -->
+    <button type="button" onclick="escanearEnCarrito()" id="btnScanCarrito"
+      style="display:flex;align-items:center;justify-content:center;gap:10px;
+             width:100%;padding:14px;margin-bottom:14px;
+             background:#1a2f6b;color:#fff;border:none;border-radius:12px;
+             font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+             transition:background .15s;letter-spacing:.2px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="7" y1="7" x2="7" y2="17"/>
+        <line x1="10" y1="7" x2="10" y2="17"/>
+        <line x1="14" y1="7" x2="14" y2="17"/>
+        <line x1="17" y1="7" x2="17" y2="17"/>
+      </svg>
+      📷 Escanear productos con la cámara
+    </button>
+
+    <!-- Buscador de artículos por texto -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div class="buscador-contenedor" style="flex:1;margin-bottom:0">
+        <span class="buscador-icono">🔍</span>
+        <input type="text" class="buscador-input" id="carrBusqueda"
+          placeholder="O buscá por nombre / código..."
+          oninput="filtrarArticulosCarrito()"
+          autocomplete="off">
+      </div>
+    </div>
+    <div id="carrResultados" style="display:none;max-height:160px;overflow-y:auto;border:1px solid var(--borde);border-radius:var(--r-md);margin-bottom:12px;background:#fff;"></div>
+
+    <!-- Tabla del carrito -->
+    <div style="min-height:80px;overflow-x:auto">
+      <table class="carrito-tabla" id="carrTabla">
+        <thead>
+          <tr>
+            <th>Artículo</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="carrItems">
+          <tr><td colspan="5" class="carrito-vacio">
+            Escaneá o buscá un artículo para agregarlo.
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Total siempre visible -->
+    <div class="carrito-total-bar" id="carrTotalBar" style="display:none">
+      <div class="carrito-total-label">Total del ticket</div>
+      <div class="carrito-total-valor" id="carrTotal">$0</div>
+    </div>
+
+    <!-- Separador y campos opcionales -->
+    <div style="border-top:1px solid var(--borde);margin:12px 0 10px"></div>
+
+    <!-- N° de venta -->
+    <div class="form-grupo">
+      <label class="form-label">N° de venta</label>
+      <input type="text" class="form-input" id="carrCodigo" placeholder="Ej: 1001" oninput="limpiarErrCarrCodigo()">
+      <div class="codigo-sugerido" id="carrCodigoSugerido" onclick="usarSugeridoCarrito()"></div>
+      <div class="error-codigo" id="carrErrCodigo">⚠ Este código ya existe.</div>
+    </div>
+
+    <!-- Fecha -->
     <div class="form-grupo">
       <label class="form-label">📅 Fecha</label>
       <input type="date" class="form-input" id="carrFecha" style="max-width:180px">
@@ -469,53 +533,6 @@
       <select class="form-select" id="carrCliente">
         <option value="">— Consumidor final —</option>
       </select>
-    </div>
-
-    <!-- Código de venta -->
-    <div class="form-grupo">
-      <label class="form-label">N° de venta</label>
-      <input type="text" class="form-input" id="carrCodigo" placeholder="Ej: 1001" oninput="limpiarErrCarrCodigo()">
-      <div class="codigo-sugerido" id="carrCodigoSugerido" onclick="usarSugeridoCarrito()"></div>
-      <div class="error-codigo" id="carrErrCodigo">⚠ Este código ya existe.</div>
-    </div>
-
-    <!-- Buscador de artículos -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:13px;font-weight:700">Agregar artículos</span>
-      <button type="button" onclick="escanearEnCarrito()"
-        title="Escanear código de barras"
-        style="display:flex;align-items:center;gap:5px;background:#1a2f6b;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="10" y1="7" x2="10" y2="17"/><line x1="14" y1="7" x2="14" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/></svg>
-        Escanear
-      </button>
-    </div>
-    <div class="carrito-buscador">
-      <input type="text" class="form-input" id="carrBusqueda"
-        placeholder="Escribí para buscar artículo..."
-        oninput="filtrarArticulosCarrito()"
-        autocomplete="off">
-    </div>
-    <!-- Resultados de búsqueda -->
-    <div id="carrResultados" style="display:none;max-height:150px;overflow-y:auto;border:1px solid var(--borde);border-radius:var(--r-md);margin-bottom:12px;background:#fff;"></div>
-
-    <!-- Tabla del carrito -->
-    <div style="min-height:80px">
-      <table class="carrito-tabla" id="carrTabla">
-        <thead>
-          <tr>
-            <th>Artículo</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="carrItems">
-          <tr><td colspan="5" class="carrito-vacio">Sin artículos todavía.<br>Buscá uno arriba para agregarlo.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Total -->
-    <div class="carrito-total-bar" id="carrTotalBar" style="display:none">
-      <div class="carrito-total-label">Total del ticket</div>
-      <div class="carrito-total-valor" id="carrTotal">$0</div>
     </div>
 
     <!-- Forma de pago global (solo modo carrito/kiosco) -->
@@ -680,9 +697,8 @@ function fechaParaInput(f) { if(!f)return hoyISO(); return new Date(f).toISOStri
 
   // ── Modo de ventas ────────────────────────────────────────
   // modo_ventas: 'individual' | 'carrito' | 'ambos'
-  // Si no está configurado: kiosco_almacen → carrito, mayorista → individual
-  const modoVentas = _configFunciones.modo_ventas ||
-    (kiosco ? 'carrito' : 'individual');
+  // Si no está configurado → 'ambos' (muestra ambos botones)
+  const modoVentas = _configFunciones.modo_ventas || 'ambos';
   const usaIndividual = modoVentas === 'individual' || modoVentas === 'ambos';
   const usaCarrito    = modoVentas === 'carrito'    || modoVentas === 'ambos';
 
@@ -751,8 +767,7 @@ function fechaParaInput(f) { if(!f)return hoyISO(); return new Date(f).toISOStri
 // ════════════════════════════════════════════════════════════
 async function abrirNuevaVenta() {
   // Llamado solo cuando hay un botón único (individual o carrito)
-  const modoVentas = _configFunciones.modo_ventas ||
-    (kiosco ? 'carrito' : 'individual');
+  const modoVentas = _configFunciones.modo_ventas || 'ambos';
   if (modoVentas === 'carrito') {
     await abrirCarrito();
   } else {
@@ -1102,49 +1117,55 @@ function renderCarrito() {
   const tbody   = document.getElementById('carrItems');
   const totalBar= document.getElementById('carrTotalBar');
 
-  const modoVentas = _configFunciones.modo_ventas || (kiosco ? 'carrito' : 'individual');
-  const conPago    = modoVentas !== 'carrito'; // Mostrar col forma de pago si no es kiosco puro
+  const modoVentas = _configFunciones.modo_ventas || 'ambos';
+  const conPago    = modoVentas !== 'carrito';
 
   if (!_carrito.length) {
     const cols = conPago ? 6 : 5;
-    tbody.innerHTML = `<tr><td colspan="${cols}" class="carrito-vacio">Sin artículos todavía.<br>Buscá uno arriba para agregarlo.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols}" class="carrito-vacio">
+      Escaneá o buscá un artículo para agregarlo.
+    </td></tr>`;
     totalBar.style.display = 'none';
     return;
   }
 
   tbody.innerHTML = _carrito.map(item => {
     const selectorPago = conPago ? `
-      <div style="margin-top:6px">
+      <div style="margin-top:5px">
         <select class="item-pago-select" onchange="actualizarPagoItem('${item.articuloId}',this.value)">
           <option value="efectivo"      ${item.formaPago==='efectivo'?'selected':''}>💵 Efectivo</option>
           <option value="transferencia" ${item.formaPago==='transferencia'?'selected':''}>🏦 Transferencia</option>
           <option value="tarjeta"       ${item.formaPago==='tarjeta'?'selected':''}>💳 Tarjeta</option>
-          <option value="cuotas"        ${item.formaPago==='cuotas'?'selected':''}>📅 Cuotas mensuales</option>
+          <option value="cuotas"        ${item.formaPago==='cuotas'?'selected':''}>📅 Cuotas</option>
         </select>
       </div>` : '';
 
-    // Fila principal del ítem
     const filaItem = `<tr>
-      <td style="vertical-align:top">
-        <div class="fw-600">${item.articuloNombre}</div>
+      <td style="vertical-align:middle">
+        <div class="fw-600" style="font-size:13px;line-height:1.3">${item.articuloNombre}</div>
+        <div style="font-size:11px;color:var(--texto-suave)">${formatoPeso(item.precio)} c/u</div>
         ${selectorPago}
       </td>
-      <td style="vertical-align:top">
+      <td style="vertical-align:middle">
         <div class="cant-control">
           <button class="cant-btn" onclick="cambiarCantidadCarrito('${item.articuloId}',-1)">−</button>
-          <span class="cant-num">${item.cantidad}</span>
+          <input type="number" class="cant-num-input"
+            value="${item.cantidad}" min="1" max="${item.stockMax}"
+            style="width:42px;text-align:center;border:1px solid var(--borde);border-radius:6px;padding:4px 2px;font-size:14px;font-weight:700;font-family:inherit"
+            onchange="setCantidadCarrito('${item.articuloId}', this.value)"
+            onclick="this.select()">
           <button class="cant-btn" onclick="cambiarCantidadCarrito('${item.articuloId}',1)">＋</button>
         </div>
       </td>
-      <td style="vertical-align:top;white-space:nowrap">${formatoPeso(item.precio)}</td>
-      <td style="vertical-align:top;white-space:nowrap"><b>${formatoPeso(item.subtotal)}</b></td>
-      <td style="vertical-align:top"><button class="btn btn-sm btn-peligro" onclick="quitarDelCarrito('${item.articuloId}')" title="Quitar">✕</button></td>
+      <td style="vertical-align:middle;white-space:nowrap;font-size:13px"><b>${formatoPeso(item.subtotal)}</b></td>
+      <td style="vertical-align:middle">
+        <button class="btn btn-sm btn-peligro" onclick="quitarDelCarrito('${item.articuloId}')" title="Quitar">✕</button>
+      </td>
     </tr>`;
 
-    // Fila extra para el panel de cuotas — ocupa todo el ancho
     const filaCuotas = (conPago && item.formaPago === 'cuotas') ? `
     <tr>
-      <td colspan="5" style="padding-top:0;padding-bottom:8px;border-top:none">
+      <td colspan="4" style="padding-top:0;padding-bottom:8px;border-top:none">
         ${renderPanelCuotasHTML(item)}
       </td>
     </tr>` : '';
@@ -1153,6 +1174,22 @@ function renderCarrito() {
   }).join('');
 
   actualizarTotalCarrito();
+}
+
+// Fijar cantidad directamente desde el input editable
+function setCantidadCarrito(artId, valor) {
+  const item = _carrito.find(i => i.articuloId === artId);
+  if (!item) return;
+  const nueva = parseInt(valor) || 1;
+  if (nueva <= 0) { quitarDelCarrito(artId); return; }
+  if (nueva > item.stockMax) {
+    mostrarAlerta(`Stock máximo: ${item.stockMax}`, 'info');
+    item.cantidad = item.stockMax;
+  } else {
+    item.cantidad = nueva;
+  }
+  recalcularItemSubtotal(item);
+  renderCarrito();
 }
 
 function renderPanelCuotasHTML(item) {
