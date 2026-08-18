@@ -323,7 +323,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-let empresa = null, empresaId = null;
+let empresa = null, empresaId = null, _plantillas = [];
 
 // ── INIT ─────────────────────────────────────────────────
 (async () => {
@@ -398,6 +398,9 @@ async function cargarPlantillas() {
   badge.style.display = 'inline-flex';
   badge.textContent   = data.length + (data.length === 1 ? ' plantilla' : ' plantillas');
 
+  // Guardar en variable global para lookup por ID (evita pasar JSON en onclick)
+  _plantillas = data;
+
   const TIPO_LABEL = { code128:'Code-128', ean13:'EAN-13', qr:'QR Code' };
   const TIPO_CLS   = { code128:'tipo-code128', ean13:'tipo-ean13', qr:'tipo-qr' };
   const TIPO_ICO   = { code128:'▐▌▌', ean13:'▐▌▌', qr:'▦' };
@@ -416,34 +419,29 @@ async function cargarPlantillas() {
         ${p.cantidad} etiquetas · ${p.columnas} columnas
       </div>
       <div class="plantilla-acciones">
-        <button class="btn btn-sm btn-acento" onclick="cargarPlantilla(${escAttr(p)})">
-          📋 Usar
-        </button>
-        <button class="btn btn-sm btn-secundario" onclick="editarPlantilla(${escAttr(p)})">
-          ✏️ Editar
-        </button>
-        <button class="btn btn-sm btn-peligro" onclick="eliminarPlantilla('${p.id}','${escHtml(p.nombre)}')">
-          🗑️ Eliminar
-        </button>
+        <button class="btn btn-sm btn-acento"    onclick="cargarPlantilla('${p.id}')">📋 Usar</button>
+        <button class="btn btn-sm btn-secundario" onclick="editarPlantilla('${p.id}')">✏️ Editar</button>
+        <button class="btn btn-sm btn-peligro"   onclick="eliminarPlantilla('${p.id}','${escHtml(p.nombre)}')">🗑️ Eliminar</button>
       </div>
     </div>`).join('')}
   </div>`;
 }
 
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function escAttr(p){ return "'" + JSON.stringify(p).replace(/'/g,"\\'") + "'"; }
 
 // Cargar plantilla en el formulario y generar hoja
-function cargarPlantilla(p) {
-  if (typeof p === 'string') p = JSON.parse(p);
+function cargarPlantilla(id) {
+  const p = _plantillas.find(x => x.id === id);
+  if (!p) return;
   _llenarFormulario(p);
   generarHoja();
   document.querySelector('.sheet-wrap')?.scrollIntoView({ behavior:'smooth' });
 }
 
 // Cargar para editar (sin generar)
-function editarPlantilla(p) {
-  if (typeof p === 'string') p = JSON.parse(p);
+function editarPlantilla(id) {
+  const p = _plantillas.find(x => x.id === id);
+  if (!p) return;
   _llenarFormulario(p);
   document.getElementById('etId').value = p.id;
   const banner = document.getElementById('editandoBanner');
