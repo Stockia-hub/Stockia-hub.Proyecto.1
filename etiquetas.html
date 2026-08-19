@@ -225,14 +225,14 @@
 
           <div class="form-fila" style="margin-top:12px">
             <div class="form-grupo">
-              <label class="form-label">Línea 1 (texto superior)</label>
+              <label class="form-label">Nombre</label>
               <input type="text" class="form-input" id="etL1"
-                placeholder="Ej: GRACIAS" oninput="actualizarPreview()">
+                placeholder="Ej: Artículo" oninput="actualizarPreview()">
             </div>
             <div class="form-grupo">
-              <label class="form-label">Línea 2 (texto inferior)</label>
+              <label class="form-label">Descripción <small class="texto-suave">(opcional)</small></label>
               <input type="text" class="form-input" id="etL2"
-                placeholder="Ej: POR SU COMPRA" oninput="actualizarPreview()">
+                placeholder="Descripción breve" oninput="actualizarPreview()">
             </div>
           </div>
 
@@ -240,7 +240,7 @@
           <div class="form-fila">
             <div class="form-grupo">
               <label class="form-label" style="display:flex;justify-content:space-between">
-                <span>Tamaño línea 1</span>
+                <span>Tamaño nombre</span>
                 <span id="tamL1Val" style="color:var(--azul-nav);font-weight:800;font-size:13px">9pt</span>
               </label>
               <input type="range" id="etTamL1" min="6" max="20" value="9" step="1"
@@ -252,7 +252,7 @@
             </div>
             <div class="form-grupo">
               <label class="form-label" style="display:flex;justify-content:space-between">
-                <span>Tamaño línea 2</span>
+                <span>Tamaño descripción</span>
                 <span id="tamL2Val" style="color:var(--azul-nav);font-weight:800;font-size:13px">8pt</span>
               </label>
               <input type="range" id="etTamL2" min="5" max="18" value="8" step="1"
@@ -274,6 +274,38 @@
               oninput="document.getElementById('tamCodVal').textContent=this.value+'pt';actualizarPreview()">
             <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--texto-suave)">
               <span>6pt (chico)</span><span>18pt (grande)</span>
+            </div>
+          </div>
+
+          <!-- Categoría y Precio -->
+          <div class="form-fila">
+            <div class="form-grupo">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Categoría <small class="texto-suave">(opcional)</small></span>
+                <span id="tamL3Val" style="color:var(--azul-nav);font-weight:800;font-size:13px">7pt</span>
+              </label>
+              <input type="text" class="form-input" id="etL3"
+                placeholder="Ej: Limpieza, Alimentos..." oninput="actualizarPreview()">
+              <input type="range" id="etTamL3" min="5" max="14" value="7" step="1"
+                style="width:100%;accent-color:var(--azul-nav);margin:4px 0"
+                oninput="document.getElementById('tamL3Val').textContent=this.value+'pt';actualizarPreview()">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--texto-suave)">
+                <span>5pt</span><span>14pt</span>
+              </div>
+            </div>
+            <div class="form-grupo">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Precio <small class="texto-suave">(opcional)</small></span>
+                <span id="tamL4Val" style="color:var(--azul-nav);font-weight:800;font-size:13px">8pt</span>
+              </label>
+              <input type="text" class="form-input" id="etL4"
+                placeholder="Ej: $1.500 o $1.500,00" oninput="actualizarPreview()">
+              <input type="range" id="etTamL4" min="6" max="16" value="8" step="1"
+                style="width:100%;accent-color:var(--azul-nav);margin:4px 0"
+                oninput="document.getElementById('tamL4Val').textContent=this.value+'pt';actualizarPreview()">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--texto-suave)">
+                <span>6pt</span><span>16pt</span>
+              </div>
             </div>
           </div>
 
@@ -431,13 +463,13 @@ function actualizarPreview() {
 async function cargarArticulosSelect() {
   if (!empresaId) return;
   const { data } = await sb.from('articulos')
-    .select('id,nombre,codigo,codigo_barras,precio')
+    .select('id,nombre,codigo,codigo_barras,precio,descripcion,categoria')
     .eq('empresa_id', empresaId).eq('activo', true).order('nombre');
   const sel = document.getElementById('etArticulo');
   sel.innerHTML = '<option value="">— O ingresá datos manuales —</option>';
   (data || []).forEach(a => {
     const opt       = document.createElement('option');
-    opt.value       = JSON.stringify({ nombre: a.nombre, codigo: a.codigo_barras || a.codigo || '', precio: a.precio });
+    opt.value       = JSON.stringify({ nombre: a.nombre, codigo: a.codigo_barras || a.codigo || '', precio: a.precio, descripcion: a.descripcion || '', categoria: a.categoria || '' });
     opt.textContent = `${a.nombre}${a.codigo_barras ? ' · '+a.codigo_barras : a.codigo ? ' · '+a.codigo : ''}`;
     sel.appendChild(opt);
   });
@@ -448,8 +480,10 @@ function cargarDesdeArticulo() {
   if (!v) return;
   try {
     const a = JSON.parse(v);
-    document.getElementById('etL1').value     = a.nombre.toUpperCase();
-    document.getElementById('etL2').value     = a.precio ? '$'+Number(a.precio).toLocaleString('es-AR') : '';
+    document.getElementById('etL1').value     = a.nombre ? a.nombre.toUpperCase() : '';
+    document.getElementById('etL2').value     = a.descripcion || '';
+    document.getElementById('etL3').value     = a.categoria   || '';
+    document.getElementById('etL4').value     = a.precio ? '$' + Number(a.precio).toLocaleString('es-AR') : '';
     document.getElementById('etCodigo').value = a.codigo;
     actualizarPreview();
   } catch {}
@@ -556,11 +590,19 @@ function _llenarFormulario(p) {
   const tamL1 = p.tam_l1 || 9;
   const tamL2 = p.tam_l2 || 8;
   const tamCod = p.tam_cod || 10;
+  const tamL3  = p.tam_l3  || 7;
+  const tamL4  = p.tam_l4  || 8;
+  document.getElementById('etL3').value    = p.linea3  || '';
+  document.getElementById('etL4').value    = p.linea4  || '';
   document.getElementById('etTamL1').value = tamL1;
   document.getElementById('etTamL2').value = tamL2;
+  document.getElementById('etTamL3').value = tamL3;
+  document.getElementById('etTamL4').value = tamL4;
   document.getElementById('etTamCod').value = tamCod;
   document.getElementById('tamL1Val').textContent  = tamL1  + 'pt';
   document.getElementById('tamL2Val').textContent  = tamL2  + 'pt';
+  document.getElementById('tamL3Val').textContent  = tamL3  + 'pt';
+  document.getElementById('tamL4Val').textContent  = tamL4  + 'pt';
   document.getElementById('tamCodVal').textContent = tamCod + 'pt';
   const radio = document.querySelector(`input[name="etTipo"][value="${p.tipo||'code128'}"]`);
   if (radio) radio.checked = true;
@@ -601,8 +643,12 @@ async function guardarPlantilla() {
     tipo:     document.querySelector('input[name="etTipo"]:checked').value,
     columnas: parseInt(document.getElementById('etColumnas').value) || 4,
     cantidad: parseInt(document.getElementById('etCantidad').value)  || 36,
+    linea3:   document.getElementById('etL3').value.trim()           || null,
+    linea4:   document.getElementById('etL4').value.trim()           || null,
     tam_l1:   parseInt(document.getElementById('etTamL1').value)    || 9,
     tam_l2:   parseInt(document.getElementById('etTamL2').value)    || 8,
+    tam_l3:   parseInt(document.getElementById('etTamL3').value)    || 7,
+    tam_l4:   parseInt(document.getElementById('etTamL4').value)    || 8,
     tam_cod:  parseInt(document.getElementById('etTamCod').value)   || 10,
   };
   if (!datos.codigo) { mostrarAlerta('El código es obligatorio', 'error'); return; }
@@ -619,15 +665,19 @@ async function guardarPlantilla() {
 }
 
 function limpiarFormulario() {
-  ['etId','etL1','etL2','etCodigo'].forEach(id => document.getElementById(id).value = '');
+  ['etId','etL1','etL2','etL3','etL4','etCodigo'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('etCantidad').value = 36;
   document.getElementById('etColumnas').value = 4;
   document.getElementById('etArticulo').value = '';
   document.getElementById('etTamL1').value = 9;
   document.getElementById('etTamL2').value = 8;
+  document.getElementById('etTamL3').value = 7;
+  document.getElementById('etTamL4').value = 8;
   document.getElementById('etTamCod').value = 10;
   document.getElementById('tamL1Val').textContent  = '9pt';
   document.getElementById('tamL2Val').textContent  = '8pt';
+  document.getElementById('tamL3Val').textContent  = '7pt';
+  document.getElementById('tamL4Val').textContent  = '8pt';
   document.getElementById('tamCodVal').textContent = '10pt';
   document.querySelector('input[name="etTipo"][value="code128"]').checked = true;
   document.getElementById('editandoBanner').style.display = 'none';
@@ -675,6 +725,8 @@ function _getTamanos() {
   return {
     l1:  parseInt(document.getElementById('etTamL1')?.value)  || 9,
     l2:  parseInt(document.getElementById('etTamL2')?.value)  || 8,
+    l3:  parseInt(document.getElementById('etTamL3')?.value)  || 7,
+    l4:  parseInt(document.getElementById('etTamL4')?.value)  || 8,
     cod: parseInt(document.getElementById('etTamCod')?.value) || 10,
   };
 }
@@ -693,10 +745,14 @@ function _renderPreview() {
   }
 
   // Construir todo en un fragment → único write al DOM
-  const { l1: tamL1, l2: tamL2, cod: tamCod } = _getTamanos();
+  const { l1: tamL1, l2: tamL2, l3: tamL3, l4: tamL4, cod: tamCod } = _getTamanos();
+  const l3 = document.getElementById('etL3').value.trim();
+  const l4 = document.getElementById('etL4').value.trim();
   const frag = document.createDocumentFragment();
   if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.style.fontSize=tamL1+'pt'; d.textContent=l1; frag.appendChild(d); }
   if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.style.fontSize=tamL2+'pt'; d.textContent=l2; frag.appendChild(d); }
+  if (l3) { const d=document.createElement('div'); d.className='et-l2'; d.style.cssText=`font-size:${tamL3}pt;color:#555`; d.textContent=l3; frag.appendChild(d); }
+  if (l4) { const d=document.createElement('div'); d.className='et-l2'; d.style.cssText=`font-size:${tamL4}pt;font-weight:800;color:#1a2f6b`; d.textContent=l4; frag.appendChild(d); }
 
   if (tipo === 'qr') {
     const url = _qrDataUrl(codigo, 90);
@@ -735,7 +791,9 @@ function generarHoja() {
 
   // QR data URL calculado UNA vez para todas las etiquetas
   let qrUrl = tipo === 'qr' ? _qrDataUrl(codigo, 68) : null;
-  const { l1: tamL1, l2: tamL2, cod: tamCod } = _getTamanos();
+  const { l1: tamL1, l2: tamL2, l3: tamL3, l4: tamL4, cod: tamCod } = _getTamanos();
+  const l3 = document.getElementById('etL3').value.trim();
+  const l4 = document.getElementById('etL4').value.trim();
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < cant; i++) {
@@ -744,6 +802,8 @@ function generarHoja() {
 
     if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.style.fontSize=tamL1+'pt'; d.textContent=l1; et.appendChild(d); }
     if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.style.fontSize=tamL2+'pt'; d.textContent=l2; et.appendChild(d); }
+    if (l3) { const d=document.createElement('div'); d.className='et-l2'; d.style.cssText=`font-size:${tamL3}pt;color:#555`; d.textContent=l3; et.appendChild(d); }
+    if (l4) { const d=document.createElement('div'); d.className='et-l2'; d.style.cssText=`font-size:${tamL4}pt;font-weight:800;color:#1a2f6b`; d.textContent=l4; et.appendChild(d); }
 
     if (tipo === 'qr') {
       if (qrUrl) {
@@ -779,7 +839,9 @@ function generarHoja() {
 // (evita redibujado de canvas durante el diálogo de impresión)
 function _construirAreaImpresion(l1, l2, codigo, tipo, cols, cant) {
   let qrUrl = tipo === 'qr' ? _qrDataUrl(codigo, 84) : null;
-  const { l1: tamL1, l2: tamL2, cod: tamCod } = _getTamanos();
+  const { l1: tamL1, l2: tamL2, l3: tamL3, l4: tamL4, cod: tamCod } = _getTamanos();
+  const l3 = document.getElementById('etL3').value.trim();
+  const l4 = document.getElementById('etL4').value.trim();
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < cant; i++) {
@@ -788,6 +850,8 @@ function _construirAreaImpresion(l1, l2, codigo, tipo, cols, cant) {
 
     if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.style.fontSize=tamL1+'pt'; d.textContent=l1; et.appendChild(d); }
     if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.style.fontSize=tamL2+'pt'; d.textContent=l2; et.appendChild(d); }
+    if (l3) { const d=document.createElement('div'); d.className='et-l2'; d.style.cssText=`font-size:${tamL3}pt;color:#555`; d.textContent=l3; et.appendChild(d); }
+    if (l4) { const d=document.createElement('div'); d.className='et-l2'; d.style.cssText=`font-size:${tamL4}pt;font-weight:800;color:#1a2f6b`; d.textContent=l4; et.appendChild(d); }
 
     if (tipo === 'qr') {
       if (qrUrl) {
