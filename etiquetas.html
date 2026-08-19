@@ -236,6 +236,34 @@
             </div>
           </div>
 
+          <!-- Tamaños de fuente -->
+          <div class="form-fila">
+            <div class="form-grupo">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Tamaño línea 1</span>
+                <span id="tamL1Val" style="color:var(--azul-nav);font-weight:800;font-size:13px">9pt</span>
+              </label>
+              <input type="range" id="etTamL1" min="6" max="20" value="9" step="1"
+                style="width:100%;accent-color:var(--azul-nav);margin:4px 0"
+                oninput="document.getElementById('tamL1Val').textContent=this.value+'pt';actualizarPreview()">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--texto-suave)">
+                <span>6pt</span><span>20pt</span>
+              </div>
+            </div>
+            <div class="form-grupo">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Tamaño línea 2</span>
+                <span id="tamL2Val" style="color:var(--azul-nav);font-weight:800;font-size:13px">8pt</span>
+              </label>
+              <input type="range" id="etTamL2" min="5" max="18" value="8" step="1"
+                style="width:100%;accent-color:var(--azul-nav);margin:4px 0"
+                oninput="document.getElementById('tamL2Val').textContent=this.value+'pt';actualizarPreview()">
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--texto-suave)">
+                <span>5pt</span><span>18pt</span>
+              </div>
+            </div>
+          </div>
+
           <div class="form-grupo">
             <label class="form-label">Valor del código *</label>
             <input type="text" class="form-input" id="etCodigo"
@@ -512,6 +540,12 @@ function _llenarFormulario(p) {
   document.getElementById('etCodigo').value   = p.codigo   || '';
   document.getElementById('etCantidad').value = p.cantidad || 36;
   document.getElementById('etColumnas').value = p.columnas || 4;
+  const tamL1 = p.tam_l1 || 9;
+  const tamL2 = p.tam_l2 || 8;
+  document.getElementById('etTamL1').value = tamL1;
+  document.getElementById('etTamL2').value = tamL2;
+  document.getElementById('tamL1Val').textContent = tamL1 + 'pt';
+  document.getElementById('tamL2Val').textContent = tamL2 + 'pt';
   const radio = document.querySelector(`input[name="etTipo"][value="${p.tipo||'code128'}"]`);
   if (radio) radio.checked = true;
   actualizarPreview();
@@ -551,6 +585,8 @@ async function guardarPlantilla() {
     tipo:     document.querySelector('input[name="etTipo"]:checked').value,
     columnas: parseInt(document.getElementById('etColumnas').value) || 4,
     cantidad: parseInt(document.getElementById('etCantidad').value)  || 36,
+    tam_l1:   parseInt(document.getElementById('etTamL1').value)    || 9,
+    tam_l2:   parseInt(document.getElementById('etTamL2').value)    || 8,
   };
   if (!datos.codigo) { mostrarAlerta('El código es obligatorio', 'error'); return; }
 
@@ -570,6 +606,10 @@ function limpiarFormulario() {
   document.getElementById('etCantidad').value = 36;
   document.getElementById('etColumnas').value = 4;
   document.getElementById('etArticulo').value = '';
+  document.getElementById('etTamL1').value = 9;
+  document.getElementById('etTamL2').value = 8;
+  document.getElementById('tamL1Val').textContent = '9pt';
+  document.getElementById('tamL2Val').textContent = '8pt';
   document.querySelector('input[name="etTipo"][value="code128"]').checked = true;
   document.getElementById('editandoBanner').style.display = 'none';
   document.getElementById('previewLabel').innerHTML =
@@ -611,6 +651,14 @@ function _qrDataUrl(codigo, px) {
   }
 }
 
+// Helper: lee tamaños configurados en los sliders
+function _getTamanos() {
+  return {
+    l1: parseInt(document.getElementById('etTamL1')?.value) || 9,
+    l2: parseInt(document.getElementById('etTamL2')?.value) || 8,
+  };
+}
+
 // ── Preview (pantalla) — render único, debounced 300ms ──────
 function _renderPreview() {
   const l1     = document.getElementById('etL1').value.trim();
@@ -625,9 +673,10 @@ function _renderPreview() {
   }
 
   // Construir todo en un fragment → único write al DOM
+  const { l1: tamL1, l2: tamL2 } = _getTamanos();
   const frag = document.createDocumentFragment();
-  if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; frag.appendChild(d); }
-  if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; frag.appendChild(d); }
+  if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.style.fontSize=tamL1+'pt'; d.textContent=l1; frag.appendChild(d); }
+  if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.style.fontSize=tamL2+'pt'; d.textContent=l2; frag.appendChild(d); }
 
   if (tipo === 'qr') {
     const url = _qrDataUrl(codigo, 90);
@@ -666,14 +715,15 @@ function generarHoja() {
 
   // QR data URL calculado UNA vez para todas las etiquetas
   let qrUrl = tipo === 'qr' ? _qrDataUrl(codigo, 68) : null;
+  const { l1: tamL1, l2: tamL2 } = _getTamanos();
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < cant; i++) {
     const et = document.createElement('div');
     et.className = 'et';
 
-    if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; et.appendChild(d); }
-    if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; et.appendChild(d); }
+    if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.style.fontSize=tamL1+'pt'; d.textContent=l1; et.appendChild(d); }
+    if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.style.fontSize=tamL2+'pt'; d.textContent=l2; et.appendChild(d); }
 
     if (tipo === 'qr') {
       if (qrUrl) {
@@ -709,14 +759,15 @@ function generarHoja() {
 // (evita redibujado de canvas durante el diálogo de impresión)
 function _construirAreaImpresion(l1, l2, codigo, tipo, cols, cant) {
   let qrUrl = tipo === 'qr' ? _qrDataUrl(codigo, 84) : null;
+  const { l1: tamL1, l2: tamL2 } = _getTamanos();
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < cant; i++) {
     const et = document.createElement('div');
     et.className = 'et-p';
 
-    if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; et.appendChild(d); }
-    if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; et.appendChild(d); }
+    if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.style.fontSize=tamL1+'pt'; d.textContent=l1; et.appendChild(d); }
+    if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.style.fontSize=tamL2+'pt'; d.textContent=l2; et.appendChild(d); }
 
     if (tipo === 'qr') {
       if (qrUrl) {
