@@ -395,13 +395,60 @@
   <footer class="app-footer">© <span class="anio-actual"></span> Stockia.</footer>
 </div>
 
-<!-- ── MODAL: Guardar plantilla ───────────────────────────── -->
+<!-- ── MODAL: Opción al guardar en modo edición ────────── -->
+<div class="modal-overlay" id="modalOpcionGuardar">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-titulo">💾 ¿Qué querés hacer?</div>
+      <button class="modal-cerrar" onclick="cerrarModal('modalOpcionGuardar')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--texto-suave);margin-bottom:14px">
+      Editando: <b id="opcionNombreActual" style="color:var(--texto)"></b>
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <!-- Opción 1: Actualizar -->
+      <button onclick="actualizarPlantilla()"
+        style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+               background:#eff6ff;border:2px solid var(--azul-accion);
+               border-radius:var(--r-lg);cursor:pointer;text-align:left;
+               font-family:var(--font);transition:var(--transition)">
+        <span style="font-size:26px;flex-shrink:0">🔄</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--azul-nav)">Actualizar plantilla</div>
+          <div style="font-size:12px;color:var(--texto-suave);margin-top:2px">
+            Reemplaza la plantilla actual con los cambios.
+          </div>
+        </div>
+      </button>
+      <!-- Opción 2: Guardar como nueva -->
+      <button onclick="iniciarGuardarComoNueva()"
+        style="display:flex;align-items:center;gap:14px;padding:14px 16px;
+               background:#f8fafc;border:2px solid var(--borde);
+               border-radius:var(--r-lg);cursor:pointer;text-align:left;
+               font-family:var(--font);transition:var(--transition)">
+        <span style="font-size:26px;flex-shrink:0">➕</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--texto)">Guardar como nueva</div>
+          <div style="font-size:12px;color:var(--texto-suave);margin-top:2px">
+            Crea una plantilla nueva sin modificar la actual.
+          </div>
+        </div>
+      </button>
+    </div>
+    <div class="modal-footer" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalOpcionGuardar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Guardar plantilla (nombre) ──────────────────── -->
 <div class="modal-overlay" id="modalGuardar">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
       <div class="modal-titulo" id="modalGuardarTitulo">💾 Guardar plantilla</div>
       <button class="modal-cerrar" onclick="cerrarModal('modalGuardar')">✕</button>
     </div>
+    <input type="hidden" id="_guardarComoNuevaFlag" value="">
     <div class="form-grupo">
       <label class="form-label">Nombre de la plantilla *</label>
       <input type="text" class="form-input" id="etNombrePlantilla"
@@ -623,37 +670,67 @@ async function eliminarPlantilla(id, nombre) {
 function pedirNombrePlantilla() {
   const codigo = document.getElementById('etCodigo').value.trim();
   if (!codigo) { mostrarAlerta('Ingresá un código antes de guardar', 'error'); return; }
+
   const editId = document.getElementById('etId').value;
-  if (editId) { guardarPlantilla(); return; }
+  if (editId) {
+    // Modo edición → mostrar elección: actualizar o guardar como nueva
+    const nombre = document.getElementById('editandoNombre').textContent;
+    document.getElementById('opcionNombreActual').textContent = nombre;
+    cerrarModal('modalGuardar');
+    abrirModal('modalOpcionGuardar');
+  } else {
+    // Modo nuevo → pedir nombre directamente
+    document.getElementById('etNombrePlantilla').value = '';
+    document.getElementById('_guardarComoNuevaFlag').value = '';
+    abrirModal('modalGuardar');
+    setTimeout(() => document.getElementById('etNombrePlantilla').focus(), 100);
+  }
+}
+
+// Actualizar la plantilla actual (modo edición)
+async function actualizarPlantilla() {
+  cerrarModal('modalOpcionGuardar');
+  // etId ya tiene valor → guardarPlantilla() actualiza
+  await guardarPlantilla();
+}
+
+// Iniciar flujo "guardar como nueva" desde el modal de elección
+function iniciarGuardarComoNueva() {
+  cerrarModal('modalOpcionGuardar');
   document.getElementById('etNombrePlantilla').value = '';
+  // Flag para indicar que aunque haya etId, queremos INSERT nuevo
+  document.getElementById('_guardarComoNuevaFlag').value = '1';
   abrirModal('modalGuardar');
+  document.getElementById('modalGuardarTitulo').textContent = '➕ Guardar como nueva plantilla';
   setTimeout(() => document.getElementById('etNombrePlantilla').focus(), 100);
 }
 
 async function guardarPlantilla() {
-  const editId = document.getElementById('etId').value;
+  // forceNew = true → siempre INSERT aunque etId esté seteado
+  const forceNew = document.getElementById('_guardarComoNuevaFlag').value === '1';
+  const editId   = forceNew ? '' : document.getElementById('etId').value;
+
   const nombre = editId
     ? document.getElementById('editandoNombre').textContent
     : document.getElementById('etNombrePlantilla').value.trim();
   if (!nombre) { mostrarAlerta('Escribí un nombre para la plantilla', 'error'); return; }
 
   const datos = {
-    empresa_id: empresaId,
+    empresa_id:  empresaId,
     nombre,
-    linea1:   document.getElementById('etL1').value.trim()     || null,
-    linea2:   document.getElementById('etL2').value.trim()     || null,
-    codigo:   document.getElementById('etCodigo').value.trim(),
-    tipo:     document.querySelector('input[name="etTipo"]:checked').value,
-    columnas: parseInt(document.getElementById('etColumnas').value) || 4,
-    cantidad: parseInt(document.getElementById('etCantidad').value)  || 36,
-    linea3:   document.getElementById('etL3').value.trim()           || null,
-    linea4:   document.getElementById('etL4').value.trim()           || null,
-    ref_nombre: document.getElementById('etRefNombre').value.trim()  || null,
-    ref_desc:   document.getElementById('etRefDesc').value.trim()    || null,
-    tam_l1:   parseInt(document.getElementById('etTamL1').value)    || 9,
-    tam_l2:   parseInt(document.getElementById('etTamL2').value)    || 8,
-
-    tam_cod:  parseInt(document.getElementById('etTamCod').value)   || 10,
+    linea1:      document.getElementById('etL1').value.trim()        || null,
+    linea2:      document.getElementById('etL2').value.trim()        || null,
+    linea3:      document.getElementById('etL3').value.trim()        || null,
+    linea4:      document.getElementById('etL4').value.trim()        || null,
+    ref_nombre:  document.getElementById('etRefNombre').value.trim() || null,
+    ref_desc:    document.getElementById('etRefDesc').value.trim()   || null,
+    codigo:      document.getElementById('etCodigo').value.trim(),
+    tipo:        document.querySelector('input[name="etTipo"]:checked').value,
+    columnas:    parseInt(document.getElementById('etColumnas').value) || 4,
+    cantidad:    parseInt(document.getElementById('etCantidad').value) || 36,
+    tam_l1:      parseInt(document.getElementById('etTamL1').value)   || 9,
+    tam_l2:      parseInt(document.getElementById('etTamL2').value)   || 8,
+    tam_cod:     parseInt(document.getElementById('etTamCod').value)  || 10,
   };
   if (!datos.codigo) { mostrarAlerta('El código es obligatorio', 'error'); return; }
 
@@ -662,9 +739,21 @@ async function guardarPlantilla() {
     : await sb.from('plantillas_etiquetas').insert(datos);
 
   if (error) { mostrarAlerta('Error: ' + error.message, 'error'); return; }
-  mostrarAlerta(editId ? 'Plantilla actualizada ✓' : 'Plantilla guardada ✓', 'exito');
+
+  // Toast diferenciado según acción
+  const msg = editId ? 'Plantilla actualizada ✓'
+    : forceNew ? 'Nueva plantilla guardada ✓'
+    : 'Plantilla guardada ✓';
+  mostrarAlerta(msg, 'exito');
+
+  // Limpiar flags
+  document.getElementById('_guardarComoNuevaFlag').value = '';
+  document.getElementById('modalGuardarTitulo').textContent = '💾 Guardar plantilla';
   cerrarModal('modalGuardar');
-  limpiarFormulario();
+
+  // Si fue actualización: mantener el formulario con los datos (sin limpiar)
+  // Si fue guardado nuevo: limpiar
+  if (!editId) limpiarFormulario();
   cargarPlantillas();
 }
 
