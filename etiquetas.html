@@ -102,16 +102,52 @@
     /* ─── Modal guardar ──────────────────────────────────── */
     #modalGuardar .modal{ max-width:400px; }
 
-    /* ─── Impresión ──────────────────────────────────────── */
-    @media print{
-      @page{ size:A4; margin:0; }
-      body *{ visibility:hidden!important; }
-      #sheetA4, #sheetA4 *{ visibility:visible!important; }
-      #sheetA4{
-        position:fixed!important; top:0!important; left:0!important;
-        width:210mm!important; min-height:297mm!important;
-        box-shadow:none!important; padding:6mm!important; margin:0!important;
-      }
+    /* ─── Área de impresión independiente de la pantalla ─── */
+    /* Oculta visualmente pero disponible para @media print   */
+    #printArea {
+      position: absolute;
+      top: -19999px;
+      left: 0;
+      width: 210mm;
+      background: #fff;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-content: start;
+      box-sizing: border-box;
+      padding: 6mm;
+      gap: 0;
+      pointer-events: none;
+    }
+    /* Etiqueta del área de impresión — mismas dimensiones exactas que .et */
+    .et-p {
+      border: 1.5px dashed #bbb;
+      box-sizing: border-box;
+      padding: 3.5mm 3mm;
+      height: 32mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      overflow: hidden;
+    }
+    .et-p .et-l1 { font-size:8.5pt; font-weight:700; text-align:center; line-height:1.2; font-family:'Poppins',sans-serif; }
+    .et-p .et-l2 { font-size:7.5pt; font-weight:500; text-align:center; color:#333;   line-height:1.2; font-family:'Poppins',sans-serif; }
+    .et-p svg    { max-width:100%; height:auto; display:block; }
+    .et-p img    { max-width:100%; height:auto; display:block; image-rendering:crisp-edges; }
+    .et-p .et-sub{ font-size:7pt; color:#444; font-family:'Poppins',sans-serif; }
+
+    /* ─── @media print — solo imprime printArea ─────────────── */
+    @media print {
+      @page { size: A4; margin: 0; }
+      /* Ocultar toda la interfaz con display (sin visibility: evita reflows) */
+      body > *          { display: none !important; }
+      /* Mostrar solo el área de impresión */
+      #printArea        { display: grid !important;
+                          position: fixed !important;
+                          top: 0 !important; left: 0 !important;
+                          width: 210mm !important;
+                          min-height: 297mm !important; }
     }
   </style>
 </head>
@@ -314,6 +350,9 @@
   </div>
 </div>
 
+<!-- Área de impresión independiente — oculta en pantalla, visible solo al imprimir -->
+<div id="printArea" aria-hidden="true"></div>
+
 <!-- Scripts -->
 <script src="js/logo.js?v=5.2" defer></script>
 <script src="js/config.js"></script>
@@ -322,8 +361,19 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+
+
 <script>
+'use strict';
 let empresa = null, empresaId = null, _plantillas = [];
+
+// ── Debounce para preview ─────────────────────────────────
+// Render único: se dispara UNA vez tras 300ms de inactividad.
+let _previewTimer = null;
+function actualizarPreview() {
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(_renderPreview, 300);
+}
 
 // ── INIT ─────────────────────────────────────────────────
 (async () => {
@@ -345,9 +395,9 @@ async function cargarArticulosSelect() {
   const sel = document.getElementById('etArticulo');
   sel.innerHTML = '<option value="">— O ingresá datos manuales —</option>';
   (data || []).forEach(a => {
-    const opt      = document.createElement('option');
-    opt.value      = JSON.stringify({ nombre: a.nombre, codigo: a.codigo_barras || a.codigo || '', precio: a.precio });
-    opt.textContent= `${a.nombre}${a.codigo_barras ? ' · '+a.codigo_barras : a.codigo ? ' · '+a.codigo : ''}`;
+    const opt       = document.createElement('option');
+    opt.value       = JSON.stringify({ nombre: a.nombre, codigo: a.codigo_barras || a.codigo || '', precio: a.precio });
+    opt.textContent = `${a.nombre}${a.codigo_barras ? ' · '+a.codigo_barras : a.codigo ? ' · '+a.codigo : ''}`;
     sel.appendChild(opt);
   });
 }
@@ -364,23 +414,21 @@ function cargarDesdeArticulo() {
   } catch {}
 }
 
-// ── PLANTILLAS — CRUD ────────────────────────────────────
+// ── PLANTILLAS CRUD ──────────────────────────────────────
 
 async function cargarPlantillas() {
   if (!empresaId) return;
   const wrap = document.getElementById('plantillasWrap');
   wrap.innerHTML = '<div class="cargando"><div class="spinner"></div>Cargando...</div>';
 
-  const { data, error } = await sb
-    .from('plantillas_etiquetas')
-    .select('*')
-    .eq('empresa_id', empresaId)
+  const { data, error } = await sb.from('plantillas_etiquetas')
+    .select('*').eq('empresa_id', empresaId)
     .order('created_at', { ascending: false });
 
   const badge = document.getElementById('plantillasCount');
 
   if (error) {
-    wrap.innerHTML = `<div class="estado-vacio"><div class="estado-vacio-desc">Error al cargar plantillas</div></div>`;
+    wrap.innerHTML = '<div class="estado-vacio"><div class="estado-vacio-desc">Error al cargar plantillas</div></div>';
     return;
   }
 
@@ -395,41 +443,50 @@ async function cargarPlantillas() {
     return;
   }
 
+  _plantillas = data;
   badge.style.display = 'inline-flex';
   badge.textContent   = data.length + (data.length === 1 ? ' plantilla' : ' plantillas');
 
-  // Guardar en variable global para lookup por ID (evita pasar JSON en onclick)
-  _plantillas = data;
+  const TL = { code128:'Code-128', ean13:'EAN-13', qr:'QR Code' };
+  const TC = { code128:'tipo-code128', ean13:'tipo-ean13', qr:'tipo-qr' };
+  const TI = { code128:'▐▌▌', ean13:'▐▌▌', qr:'▦' };
 
-  const TIPO_LABEL = { code128:'Code-128', ean13:'EAN-13', qr:'QR Code' };
-  const TIPO_CLS   = { code128:'tipo-code128', ean13:'tipo-ean13', qr:'tipo-qr' };
-  const TIPO_ICO   = { code128:'▐▌▌', ean13:'▐▌▌', qr:'▦' };
+  const frag = document.createDocumentFragment();
+  const grid = document.createElement('div');
+  grid.className = 'plantillas-grid';
 
-  wrap.innerHTML = `<div class="plantillas-grid">${data.map(p => `
-    <div class="plantilla-card" id="pc-${p.id}">
+  data.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'plantilla-card';
+    card.id = 'pc-' + p.id;
+    card.innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div class="plantilla-nombre">${escHtml(p.nombre)}</div>
-        <span class="tipo-badge ${TIPO_CLS[p.tipo]||'tipo-code128'}">
-          ${TIPO_ICO[p.tipo]||'▐▌▌'} ${TIPO_LABEL[p.tipo]||p.tipo}
-        </span>
+        <span class="tipo-badge ${TC[p.tipo]||'tipo-code128'}">${TI[p.tipo]||'▐▌▌'} ${TL[p.tipo]||p.tipo}</span>
       </div>
       <div class="plantilla-meta">
-        ${p.linea1 ? `<b>${escHtml(p.linea1)}</b>${p.linea2 ? ' / '+escHtml(p.linea2) : ''}<br>` : ''}
+        ${p.linea1 ? `<b>${escHtml(p.linea1)}</b>${p.linea2?' / '+escHtml(p.linea2):''}<br>` : ''}
         Código: <code style="font-size:11px">${escHtml(p.codigo)}</code><br>
         ${p.cantidad} etiquetas · ${p.columnas} columnas
       </div>
       <div class="plantilla-acciones">
-        <button class="btn btn-sm btn-acento"    onclick="cargarPlantilla('${p.id}')">📋 Usar</button>
+        <button class="btn btn-sm btn-acento"     onclick="cargarPlantilla('${p.id}')">📋 Usar</button>
         <button class="btn btn-sm btn-secundario" onclick="editarPlantilla('${p.id}')">✏️ Editar</button>
-        <button class="btn btn-sm btn-peligro"   onclick="eliminarPlantilla('${p.id}','${escHtml(p.nombre)}')">🗑️ Eliminar</button>
-      </div>
-    </div>`).join('')}
-  </div>`;
+        <button class="btn btn-sm btn-peligro"    onclick="eliminarPlantilla('${p.id}','${escHtml(p.nombre)}')">🗑️ Eliminar</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  frag.appendChild(grid);
+  wrap.innerHTML = '';
+  wrap.appendChild(frag);
 }
 
-function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
-// Cargar plantilla en el formulario y generar hoja
 function cargarPlantilla(id) {
   const p = _plantillas.find(x => x.id === id);
   if (!p) return;
@@ -438,7 +495,6 @@ function cargarPlantilla(id) {
   document.querySelector('.sheet-wrap')?.scrollIntoView({ behavior:'smooth' });
 }
 
-// Cargar para editar (sin generar)
 function editarPlantilla(id) {
   const p = _plantillas.find(x => x.id === id);
   if (!p) return;
@@ -451,11 +507,11 @@ function editarPlantilla(id) {
 }
 
 function _llenarFormulario(p) {
-  document.getElementById('etL1').value      = p.linea1  || '';
-  document.getElementById('etL2').value      = p.linea2  || '';
-  document.getElementById('etCodigo').value  = p.codigo  || '';
-  document.getElementById('etCantidad').value= p.cantidad|| 36;
-  document.getElementById('etColumnas').value= p.columnas|| 4;
+  document.getElementById('etL1').value       = p.linea1   || '';
+  document.getElementById('etL2').value       = p.linea2   || '';
+  document.getElementById('etCodigo').value   = p.codigo   || '';
+  document.getElementById('etCantidad').value = p.cantidad || 36;
+  document.getElementById('etColumnas').value = p.columnas || 4;
   const radio = document.querySelector(`input[name="etTipo"][value="${p.tipo||'code128'}"]`);
   if (radio) radio.checked = true;
   actualizarPreview();
@@ -464,27 +520,19 @@ function _llenarFormulario(p) {
 async function eliminarPlantilla(id, nombre) {
   if (!confirm(`¿Eliminar la plantilla "${nombre}"?`)) return;
   const { error } = await sb.from('plantillas_etiquetas').delete().eq('id', id);
-  if (error) { mostrarAlerta('Error al eliminar: ' + error.message, 'error'); return; }
+  if (error) { mostrarAlerta('Error: ' + error.message, 'error'); return; }
   mostrarAlerta('Plantilla eliminada', 'exito');
   cargarPlantillas();
 }
 
-// ── GUARDAR / ACTUALIZAR ─────────────────────────────────
-
 function pedirNombrePlantilla() {
   const codigo = document.getElementById('etCodigo').value.trim();
   if (!codigo) { mostrarAlerta('Ingresá un código antes de guardar', 'error'); return; }
-
   const editId = document.getElementById('etId').value;
-  if (editId) {
-    // Edición directa sin pedir nombre
-    guardarPlantilla();
-  } else {
-    document.getElementById('etNombrePlantilla').value = '';
-    document.getElementById('modalGuardarTitulo').textContent = '💾 Guardar plantilla';
-    abrirModal('modalGuardar');
-    setTimeout(() => document.getElementById('etNombrePlantilla').focus(), 100);
-  }
+  if (editId) { guardarPlantilla(); return; }
+  document.getElementById('etNombrePlantilla').value = '';
+  abrirModal('modalGuardar');
+  setTimeout(() => document.getElementById('etNombrePlantilla').focus(), 100);
 }
 
 async function guardarPlantilla() {
@@ -492,31 +540,25 @@ async function guardarPlantilla() {
   const nombre = editId
     ? document.getElementById('editandoNombre').textContent
     : document.getElementById('etNombrePlantilla').value.trim();
-
   if (!nombre) { mostrarAlerta('Escribí un nombre para la plantilla', 'error'); return; }
 
   const datos = {
     empresa_id: empresaId,
     nombre,
-    linea1:  document.getElementById('etL1').value.trim()     || null,
-    linea2:  document.getElementById('etL2').value.trim()     || null,
-    codigo:  document.getElementById('etCodigo').value.trim(),
-    tipo:    document.querySelector('input[name="etTipo"]:checked').value,
-    columnas:parseInt(document.getElementById('etColumnas').value) || 4,
-    cantidad:parseInt(document.getElementById('etCantidad').value)  || 36,
+    linea1:   document.getElementById('etL1').value.trim()     || null,
+    linea2:   document.getElementById('etL2').value.trim()     || null,
+    codigo:   document.getElementById('etCodigo').value.trim(),
+    tipo:     document.querySelector('input[name="etTipo"]:checked').value,
+    columnas: parseInt(document.getElementById('etColumnas').value) || 4,
+    cantidad: parseInt(document.getElementById('etCantidad').value)  || 36,
   };
-
   if (!datos.codigo) { mostrarAlerta('El código es obligatorio', 'error'); return; }
 
-  let error;
-  if (editId) {
-    ({ error } = await sb.from('plantillas_etiquetas').update(datos).eq('id', editId));
-  } else {
-    ({ error } = await sb.from('plantillas_etiquetas').insert(datos));
-  }
+  const { error } = editId
+    ? await sb.from('plantillas_etiquetas').update(datos).eq('id', editId)
+    : await sb.from('plantillas_etiquetas').insert(datos);
 
   if (error) { mostrarAlerta('Error: ' + error.message, 'error'); return; }
-
   mostrarAlerta(editId ? 'Plantilla actualizada ✓' : 'Plantilla guardada ✓', 'exito');
   cerrarModal('modalGuardar');
   limpiarFormulario();
@@ -524,10 +566,7 @@ async function guardarPlantilla() {
 }
 
 function limpiarFormulario() {
-  document.getElementById('etId').value = '';
-  document.getElementById('etL1').value = '';
-  document.getElementById('etL2').value = '';
-  document.getElementById('etCodigo').value = '';
+  ['etId','etL1','etL2','etCodigo'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('etCantidad').value = 36;
   document.getElementById('etColumnas').value = 4;
   document.getElementById('etArticulo').value = '';
@@ -537,48 +576,84 @@ function limpiarFormulario() {
     '<div class="texto-suave" style="font-size:13px">Completá los campos para ver la previsualización</div>';
 }
 
-// ── PREVIEW ──────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// RENDERIZADO — sin bucles, sin rAF, sin setInterval
+// Cada función hace UN solo write al DOM vía DocumentFragment.
+// ════════════════════════════════════════════════════════════
 
-function actualizarPreview() {
+// Renderiza barcode en un SVG ya existente en el DOM.
+function _renderizarBarcode(svgEl, codigo, tipo) {
+  JsBarcode(svgEl, codigo, {
+    format:       tipo === 'ean13' ? 'EAN13' : 'CODE128',
+    width:        2,
+    height:       44,
+    displayValue: true,
+    fontSize:     10,
+    margin:       3,
+    lineColor:    '#000000',
+    background:   '#ffffff',
+  });
+}
+
+// Genera data URL del QR de forma síncrona.
+// Agrega un div oculto al DOM temporalmente (QRCode.js lo requiere),
+// obtiene el data URL del canvas y lo elimina inmediatamente.
+function _qrDataUrl(codigo, px) {
+  const tmp = document.createElement('div');
+  tmp.style.cssText = 'position:absolute;top:-9999px;left:0;visibility:hidden';
+  document.body.appendChild(tmp);
+  try {
+    new QRCode(tmp, { text: codigo, width: px, height: px, correctLevel: QRCode.CorrectLevel.M });
+    const canvas = tmp.querySelector('canvas');
+    return canvas ? canvas.toDataURL('image/png') : null;
+  } finally {
+    document.body.removeChild(tmp);
+  }
+}
+
+// ── Preview (pantalla) — render único, debounced 300ms ──────
+function _renderPreview() {
   const l1     = document.getElementById('etL1').value.trim();
   const l2     = document.getElementById('etL2').value.trim();
   const codigo = document.getElementById('etCodigo').value.trim();
   const tipo   = document.querySelector('input[name="etTipo"]:checked').value;
   const wrap   = document.getElementById('previewLabel');
+
   if (!codigo) {
     wrap.innerHTML = '<div class="texto-suave" style="font-size:13px">Ingresá un código para ver la previsualización</div>';
     return;
   }
-  wrap.innerHTML = '';
-  if (l1){ const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; wrap.appendChild(d); }
-  if (l2){ const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; wrap.appendChild(d); }
+
+  // Construir todo en un fragment → único write al DOM
+  const frag = document.createDocumentFragment();
+  if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; frag.appendChild(d); }
+  if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; frag.appendChild(d); }
 
   if (tipo === 'qr') {
-    const div = document.createElement('div');
-    wrap.appendChild(div);
-    try { new QRCode(div,{text:codigo,width:90,height:90,correctLevel:QRCode.CorrectLevel.M}); } catch {}
-    const sub=document.createElement('div'); sub.className='et-sub'; sub.textContent=codigo; wrap.appendChild(sub);
+    const url = _qrDataUrl(codigo, 90);
+    if (url) {
+      const img = document.createElement('img');
+      img.src   = url;
+      img.style.cssText = 'width:90px;height:90px;image-rendering:crisp-edges';
+      frag.appendChild(img);
+    }
+    const sub=document.createElement('div'); sub.className='et-sub'; sub.textContent=codigo; frag.appendChild(sub);
   } else {
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.style.maxWidth='100%'; wrap.appendChild(svg);
-    try {
-      JsBarcode(svg, codigo, {
-        format: tipo==='ean13'?'EAN13':'CODE128',
-        width:2, height:50, displayValue:true, fontSize:12, margin:4, lineColor:'#000',
-      });
-    } catch(e) {
-      wrap.innerHTML=`<div style="color:var(--rojo);font-size:12px">⚠️ ${e.message||'Código inválido para este formato'}</div>`;
+    svg.style.maxWidth = '100%';
+    frag.appendChild(svg);
+    try { _renderizarBarcode(svg, codigo, tipo); }
+    catch(e) {
+      wrap.innerHTML = `<div style="color:var(--rojo);font-size:12px">⚠️ ${escHtml(e.message||'Código inválido')}</div>`;
+      return;
     }
   }
+
+  wrap.innerHTML = '';   // único vaciado
+  wrap.appendChild(frag); // único insert
 }
 
-// ── GENERAR HOJA ─────────────────────────────────────────
-
-function actualizarColumnas() {
-  const cols = document.getElementById('etColumnas').value;
-  document.getElementById('sheetA4').style.gridTemplateColumns = `repeat(${cols},1fr)`;
-}
-
+// ── Hoja de pantalla — DocumentFragment, un solo write ──────
 function generarHoja() {
   const l1     = document.getElementById('etL1').value.trim();
   const l2     = document.getElementById('etL2').value.trim();
@@ -589,51 +664,119 @@ function generarHoja() {
 
   if (!codigo) { mostrarAlerta('Ingresá un código para generar la hoja', 'error'); return; }
 
-  const sheet = document.getElementById('sheetA4');
-  sheet.style.gridTemplateColumns = `repeat(${cols},1fr)`;
-  sheet.innerHTML = '';
+  // QR data URL calculado UNA vez para todas las etiquetas
+  let qrUrl = tipo === 'qr' ? _qrDataUrl(codigo, 68) : null;
 
+  const frag = document.createDocumentFragment();
   for (let i = 0; i < cant; i++) {
     const et = document.createElement('div');
     et.className = 'et';
-    if (l1){ const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; et.appendChild(d); }
-    if (l2){ const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; et.appendChild(d); }
+
+    if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; et.appendChild(d); }
+    if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; et.appendChild(d); }
 
     if (tipo === 'qr') {
-      const qw = document.createElement('div'); qw.style.lineHeight='0';
-      et.appendChild(qw);
-      try { new QRCode(qw,{text:codigo,width:68,height:68,correctLevel:QRCode.CorrectLevel.M}); } catch {}
+      if (qrUrl) {
+        const img = document.createElement('img');
+        img.src   = qrUrl;
+        img.style.cssText = 'width:68px;height:68px;image-rendering:crisp-edges';
+        et.appendChild(img);
+      }
       const sub=document.createElement('div'); sub.className='et-sub'; sub.textContent=codigo; et.appendChild(sub);
     } else {
       const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.style.maxWidth = '100%';
       et.appendChild(svg);
-      try {
-        JsBarcode(svg, codigo, {
-          format: tipo==='ean13'?'EAN13':'CODE128',
-          width:1.5, height:34, displayValue:true, fontSize:8, margin:2, lineColor:'#000',
-        });
-        svg.style.maxWidth='100%';
-      } catch(e) {
-        et.innerHTML=''; 
-        const err=document.createElement('div');
-        err.style.cssText='color:red;font-size:7pt;text-align:center';
-        err.textContent=e.message||'Código inválido'; et.appendChild(err);
+      try { _renderizarBarcode(svg, codigo, tipo); }
+      catch(e) {
+        et.innerHTML = `<div style="color:red;font-size:7pt;text-align:center">${escHtml(e.message||'Código inválido')}</div>`;
       }
     }
-    sheet.appendChild(et);
+    frag.appendChild(et);
   }
+
+  const sheet = document.getElementById('sheetA4');
+  sheet.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  sheet.innerHTML = '';      // un único vaciado
+  sheet.appendChild(frag);  // un único insert
+
   mostrarAlerta(`${cant} etiquetas generadas ✓`, 'exito');
   sheet.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
-// ── IMPRIMIR ─────────────────────────────────────────────
+// ── Área de impresión independiente ─────────────────────────
+// SVGs vectoriales de mayor calidad + QR como <img> data URL
+// (evita redibujado de canvas durante el diálogo de impresión)
+function _construirAreaImpresion(l1, l2, codigo, tipo, cols, cant) {
+  let qrUrl = tipo === 'qr' ? _qrDataUrl(codigo, 84) : null;
 
-function imprimirHoja() {
-  const sheet = document.getElementById('sheetA4');
-  if (!sheet.querySelector('.et')) {
-    mostrarAlerta('Primero generá la hoja de etiquetas', 'error'); return;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < cant; i++) {
+    const et = document.createElement('div');
+    et.className = 'et-p';
+
+    if (l1) { const d=document.createElement('div'); d.className='et-l1'; d.textContent=l1; et.appendChild(d); }
+    if (l2) { const d=document.createElement('div'); d.className='et-l2'; d.textContent=l2; et.appendChild(d); }
+
+    if (tipo === 'qr') {
+      if (qrUrl) {
+        const img = document.createElement('img');
+        img.src   = qrUrl;
+        img.style.cssText = 'width:20mm;height:20mm;image-rendering:crisp-edges';
+        et.appendChild(img);
+      }
+      const sub=document.createElement('div'); sub.className='et-sub'; sub.textContent=codigo; et.appendChild(sub);
+    } else {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.style.maxWidth = '100%';
+      et.appendChild(svg);
+      try {
+        // Calidad mayor para impresión
+        JsBarcode(svg, codigo, {
+          format:       tipo === 'ean13' ? 'EAN13' : 'CODE128',
+          width:        2.2,
+          height:       46,
+          displayValue: true,
+          fontSize:     10,
+          margin:       3,
+          lineColor:    '#000000',
+          background:   '#ffffff',
+        });
+      } catch(e) {
+        et.innerHTML = `<div style="color:red;font-size:7pt;text-align:center">${escHtml(e.message||'Inválido')}</div>`;
+      }
+    }
+    frag.appendChild(et);
   }
+
+  const pa = document.getElementById('printArea');
+  pa.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  pa.innerHTML = '';
+  pa.appendChild(frag);
+}
+
+// ── Imprimir ─────────────────────────────────────────────────
+// 1. Construye #printArea (render único, independiente de pantalla)
+// 2. window.print() — sin cambios de estado intermedios
+function imprimirHoja() {
+  if (!document.getElementById('sheetA4').querySelector('.et')) {
+    mostrarAlerta('Primero generá la hoja de etiquetas', 'error');
+    return;
+  }
+  _construirAreaImpresion(
+    document.getElementById('etL1').value.trim(),
+    document.getElementById('etL2').value.trim(),
+    document.getElementById('etCodigo').value.trim(),
+    document.querySelector('input[name="etTipo"]:checked').value,
+    parseInt(document.getElementById('etColumnas').value)||4,
+    Math.min(108, Math.max(1, parseInt(document.getElementById('etCantidad').value)||36))
+  );
   window.print();
+}
+
+function actualizarColumnas() {
+  const cols = document.getElementById('etColumnas').value;
+  document.getElementById('sheetA4').style.gridTemplateColumns = `repeat(${cols},1fr)`;
 }
 </script>
 
