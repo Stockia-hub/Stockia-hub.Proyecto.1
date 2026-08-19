@@ -2,6 +2,13 @@
 <html lang="es">
 <head>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a2f6b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Stockia">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Stockia — Artículos</title>
@@ -78,14 +85,15 @@
                 <th>Nombre</th>
                 <th>Categoría</th>
                 <th>Código</th>
-                <th>Precio</th>
+                <th>Precio unit.</th>
                 <th>Stock</th>
+                <th>Valor total</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="cuerpoTabla">
-              <tr><td colspan="7"><div class="cargando"><div class="spinner"></div><span>Cargando...</span></div></td></tr>
+              <tr><td colspan="8"><div class="cargando"><div class="spinner"></div><span>Cargando...</span></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -264,7 +272,7 @@
     function renderTabla(lista) {
       const tbody = document.getElementById('cuerpoTabla');
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="estado-vacio">
+        tbody.innerHTML = `<tr><td colspan="8"><div class="estado-vacio">
           <div class="estado-vacio-icono">${empresa?.modulo_articulos_icono||'📦'}</div>
           <div class="estado-vacio-titulo">Sin artículos</div>
           <div class="estado-vacio-desc">Agregá el primer artículo para comenzar</div>
@@ -272,7 +280,18 @@
         </div></td></tr>`;
         return;
       }
-      tbody.innerHTML = lista.map(a => `
+      tbody.innerHTML = lista.map(a => {
+        const precio      = parseFloat(a.precio)  || 0;
+        const stock       = parseInt(a.stock)      || 0;
+        const valorTotal  = precio * stock;
+        // Color del valor total según stock
+        const valorColor  = stock === 0
+          ? 'color:var(--texto-suave)'
+          : stock <= (a.stock_minimo || 0)
+            ? 'color:var(--naranja);font-weight:700'
+            : 'color:var(--verde);font-weight:700';
+
+        return `
         <tr>
           <td>
             <b>${a.nombre}</b>
@@ -282,10 +301,14 @@
           <td><code style="font-size:12px;color:var(--texto-suave)">${a.codigo||'-'}</code></td>
           <td><b>${formatoPeso(a.precio)}</b></td>
           <td>
-            <span class="badge ${a.stock === 0 ? 'badge-rojo' : a.stock <= (a.stock_minimo||0) ? 'badge-naranja' : 'badge-verde'}">
-              ${a.stock}
+            <span class="badge ${stock === 0 ? 'badge-rojo' : stock <= (a.stock_minimo||0) ? 'badge-naranja' : 'badge-verde'}">
+              ${stock}
             </span>
             ${a.stock_minimo > 0 ? `<small class="texto-suave"> / mín ${a.stock_minimo}</small>` : ''}
+          </td>
+          <td>
+            <span style="${valorColor};font-size:13px">${formatoPeso(valorTotal)}</span>
+            ${stock === 0 ? '<br><small class="texto-suave" style="font-size:10px">sin stock</small>' : `<br><small class="texto-suave" style="font-size:10px">${stock} u. × ${formatoPeso(precio)}</small>`}
           </td>
           <td><span class="badge ${a.activo ? 'badge-verde' : 'badge-gris'}">${a.activo ? 'Activo' : 'Inactivo'}</span></td>
           <td>
@@ -294,8 +317,8 @@
               <button class="btn btn-sm btn-ghost" onclick="abrirEliminar('${a.id}')">🗑️</button>
             </div>
           </td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
     }
 
     // ── Filtros ───────────────────────────────────────────────
@@ -423,6 +446,15 @@
       mostrarAlerta('Artículo eliminado', 'info');
       cerrarModal('modalEliminar');
       cargarArticulos();
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .catch(err => console.warn('SW:', err));
+      });
     }
   </script>
 </body>
